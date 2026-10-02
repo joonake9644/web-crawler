@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "POST_CHECK",
   "dirty": false,
-  "verified_commit": "e2c91d5",
+  "verified_commit": "a72ca27",
   "session_end": {
     "independent_review": {
       "status": "passed",
       "model": "opencode-go/deepseek-v4.1-flash",
-      "findings_fixed": 28,
-      "note": "다섯 라운드 모두 CHANGES REQUESTED/PASS 판정을 받아 finding 을 전부 수정하고 GREEN 확인했다 (누적 28건; 라운드 5 는 판정 PASS + Low/nit 6건 반영). 라운드 1 session_handoff write 거짓 exit=1 순환(6). 라운드 2 핸드오프가 경쟁 정본 .context 를 SSOT 로 지시(5). 라운드 3 진입 문서 이관 HARNESS-003 계약 기록 사실오류(2). 라운드 4 브랜치 코드 전체 캐리 파서·부트스트랩(9). 라운드 5 라운드4 수정분 재검 — PASS, Low/nit 6건 반영(정규식 파생 단언, unquoted 마커, 접두-선행 제거, 라벨 단위 폴백, docstring). 수정 과정에서 새 결함 2건을 메인이 실측으로 잡았다 — CARRIED_PREFIX 후행공백으로 removeprefix 실패, pytest basetemp 가 저장소 안이라 tmp 테스트가 실저장소 커밋본을 읽음(autouse fixture 로 격리). 리뷰어는 전 라운드 python 실행이 차단돼 실행 항목을 UNVERIFIED 로 표시했고, RED/변이/멱등성/byte 대조/손실 재현은 메인이 직접 실측했다. 상세는 docs/task-contracts/PY311-001.md 의 각 라운드 절."
+      "findings_fixed": 3,
+      "note": "HARNESS-004(CLAUDE.md 464→100줄 지도화 + 안전 규칙을 docs/crawl-reference.md 로 원문 이관 + 통지 게이트 테스트 앵커 재지정)를 독립 리뷰어(reviewer 서브에이전트)로 리뷰. 판정 PASS — Blocker/High/Medium 0, Low 3·nit 1. Low 3건 전부 수정: AGENTS.md 옛 참조 2곳 재지정, crawl-reference 의 '위 블록' 참조 정정, CLAUDE.md 지도에 README 링크 흡수. nit 1건(안전 요약 약한 substring 검사)은 권위 텍스트가 crawl-reference.md 에 강하게 고정돼 있어 미조치. 리뷰어는 실행 차단 환경이라 pytest/계약 실행을 UNVERIFIED 로 표기했고, 메인이 587 passed·계약 5종 exit 0·주간검사 0 WARN 을 직접 재실측했다. HARNESS-004 는 사용자 지시 DIR-001(하네스 남은 WARN 해소). 상세는 docs/task-contracts/PY311-001.md 의 HARNESS-004 절."
     }
   }
 }
