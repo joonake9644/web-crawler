@@ -145,14 +145,37 @@ export function appendEvent(P, event, files = []) {
     const { events, errors, fromRef } = readLedger(P);
     if (errors.length) throw new Error(errors.join('\n'));
     if (fromRef) throw new Error('작업 원장이 없다(이력 ref만 있음). `plan restore`로 복구한 뒤 기록한다.');
-    const full = { seq: (events.at(-1)?.seq ?? 0) + 1, ts: event.ts ?? new Date().toISOString(), ...event };
-    const problems = validateEvents([...events, full]);
+    const full = { schema: 3, seq: (events.at(-1)?.seq ?? 0) + 1, ts: event.ts ?? new Date().toISOString(), ...event };
+    if (full.by === 'user' && full.quote) {
+      const candidates = listInbox(P).filter((r) => r.origin === 'user' && String(r.prompt).includes(String(full.quote ?? '')) && full.quote && (!full.approval_ref || r.id === full.approval_ref));
+      if (candidates.length !== 1) throw new Error('승인 원문을 실제 사용자 입력 한 건에 연결해야 한다. `--approval-ref <inbox ID>`로 지정한다. 수동 --text·출처 불명·에이전트 입력은 승인 근거가 아니다.');
+      const r = candidates[0];
+      full.approval = { ref: r.id, sha256: sha256(r.prompt), origin: r.origin, tool: r.tool, session: r.session };
+    }
+    if (full.type === 'adr.status') {
+      if (full.source === 'migration' && ['accepted', 'superseded'].includes(full.status) && events.some((e) => e.schema >= 3 && e.source !== 'migration')) throw new Error('새 프로토콜에서 결정 등록을 시작한 뒤에는 ADR 이관으로 수락을 우회할 수 없다. 사용자 원문으로 `adr accept`한다.');
+      const f = files.find((f) => f.rel === `adr/${full.id}.md`);
+      if (f) {
+        const previous = fold(events).adrs.get(full.id);
+        if (previous && ['accepted', 'rejected', 'superseded'].includes(previous.status)) {
+          const old = readSnap(P, previous.snapshot);
+          if (old && adrDecisionBody(old.toString('utf8')) !== adrDecisionBody(f.buf.toString('utf8'))) throw new Error(`${full.id} 확정 ADR 본문은 다시 승인해서 덮어쓸 수 없다. 새 ADR로 대체한다.`);
+          if (full.status === 'proposed') throw new Error(`${full.id} 확정 ADR을 proposed로 되돌릴 수 없다. 새 ADR을 제안한다.`);
+        }
+        full.snapshot = `adr/${full.id}-${full.seq}.md`;
+        full.sha256 = sha256(f.buf);
+        files = [...files, { rel: full.snapshot, buf: f.buf }];
+      }
+    }
+    const additions = [full];
+    if (full.approval) additions.push({ schema: 3, seq: full.seq + 1, ts: full.ts, type: 'inbox.triage', refs: [full.approval.ref], as: `quote:#${full.seq}` });
+    const problems = validateEvents([...events, ...additions]);
     if (problems.length) throw new Error(problems.join('\n'));
     for (const f of files) {
       fs.mkdirSync(path.dirname(path.join(P.dir, f.rel)), { recursive: true });
       fs.writeFileSync(path.join(P.dir, f.rel), f.buf);
     }
-    fs.appendFileSync(P.ledger, JSON.stringify(full) + '\n');
+    fs.appendFileSync(P.ledger, additions.map((e) => JSON.stringify(e)).join('\n') + '\n');
     snapshot(P, `plan #${full.seq} ${full.type} ${full.id ?? full.rev ?? ''}`.trim());
     return full;
   });
@@ -195,6 +218,8 @@ export function fold(events) {
         statusSeq: e.seq,
         supersededBy: e.superseded_by ?? prev.supersededBy,
         acceptedSeq: e.status === 'accepted' ? e.seq : prev.acceptedSeq,
+        snapshot: e.snapshot ?? prev.snapshot ?? `adr/${e.id}.md`,
+        sha256: e.sha256 ?? prev.sha256,
       });
     } else if (e.type === 'adr.impact') {
       const a = s.adrs.get(e.id);
@@ -214,13 +239,17 @@ export function validateEvents(events) {
   const adrs = new Map();
   let lastSeq = 0;
   let lastRev = 0;
+  let protocol = 0;
   for (const e of events) {
     const at = `#${e.seq ?? '?'}(${e.type ?? '?'})`;
+    if ((e.schema ?? 0) < protocol) errs.push(`${at}: 원장 프로토콜이 내려갔다. 모든 작업트리의 CLI를 갱신한다.`);
+    protocol = Math.max(protocol, e.schema ?? 0);
     if (!Number.isInteger(e.seq) || e.seq !== lastSeq + 1) errs.push(`${at}: seq는 1씩 증가해야 한다(직전 ${lastSeq}).`);
     lastSeq = e.seq;
     if (!e.ts || Number.isNaN(Date.parse(e.ts))) errs.push(`${at}: ts 없음.`);
     const needUser = (why) => {
       if (e.by !== 'user' || !String(e.quote ?? '').trim()) errs.push(`${at}: ${why}는 사용자 원문(by=user, quote)이 필요하다.`);
+      if (e.schema >= 3 && (!e.approval?.ref || e.approval.origin !== 'user' || !/^[0-9a-f]{64}$/.test(e.approval.sha256 ?? ''))) errs.push(`${at}: ${why}는 포착된 승인 원문 증거가 필요하다.`);
     };
     switch (e.type) {
       case 'directive.add':
@@ -266,6 +295,7 @@ export function validateEvents(events) {
         if (e.reason !== 'BASELINE' && (!Array.isArray(e.triggers) || e.triggers.length === 0)) errs.push(`${at}: 개정 트리거(지시·ADR ID)가 필요하다.`);
         for (const t of e.triggers ?? []) if (!dirs.has(t) && !adrs.has(t)) errs.push(`${at}: 트리거 ${t}가 원장에 없다.`);
         if (!e.snapshot || !/^[0-9a-f]{64}$/.test(e.sha256 ?? '')) errs.push(`${at}: 계획 스냅샷과 sha256이 필요하다.`);
+        if (e.schema >= 3 && (!Array.isArray(e.adr_basis) || e.adr_basis.some((b) => !/^ADR-\d{3,}$/.test(b.id ?? '') || !Number.isInteger(b.accepted_seq) || b.accepted_seq >= e.seq || !/^[0-9a-f]{64}$/.test(b.sha256 ?? '')))) errs.push(`${at}: 계획 ADR 기준점(id·accepted_seq·sha256)이 필요하다.`);
         break;
       }
       case 'adr.status':
@@ -273,11 +303,13 @@ export function validateEvents(events) {
         if (!ADR_STATUSES.has(e.status)) errs.push(`${at}: ADR 상태는 ${[...ADR_STATUSES].join('|')}.`);
         if (!adrs.has(e.id) && !e.file) errs.push(`${at}: 첫 ADR 이벤트는 file이 필요하다.`);
         if (e.status === 'superseded' && adrs.get(e.superseded_by) !== 'accepted') errs.push(`${at}: 대체하는 ${e.superseded_by}가 먼저 accepted여야 한다.`);
+        if (e.schema >= 3 && ['accepted', 'superseded', 'rejected'].includes(e.status) && e.source !== 'migration') needUser('ADR 결정 확정');
         adrs.set(e.id, e.status);
         break;
       case 'adr.impact':
         if (!adrs.has(e.id)) errs.push(`${at}: 없는 ADR ${e.id}.`);
         if (e.impact !== 'none' || !String(e.reason ?? '').trim()) errs.push(`${at}: adr.impact는 impact=none과 사유가 필요하다(영향이 있으면 계획 개정으로 처리).`);
+        if (e.schema >= 3) needUser('ADR 영향 없음 확정');
         break;
       case 'inbox.triage':
         if (!(e.ref || (Array.isArray(e.refs) && e.refs.length)) || !e.as) errs.push(`${at}: triage는 ref(또는 refs)와 as가 필요하다.`);
@@ -339,8 +371,10 @@ export function pendingAdrs(state) {
   return [...state.adrs.values()].filter((a) => {
     if (a.status !== 'accepted') return false;
     const acc = a.acceptedSeq ?? 0;
-    const revised = state.plans.some((p) => p.seq > acc && (p.triggers ?? []).includes(a.id));
-    const noImpact = a.impact === 'none' && (a.impactSeq ?? 0) > acc;
+    const revised = state.plan?.adr_basis
+      ? state.plan.adr_basis.some((b) => b.id === a.id && b.accepted_seq === acc && (!a.sha256 || b.sha256 === a.sha256))
+      : state.plans.some((p) => p.seq > acc && (p.triggers ?? []).includes(a.id));
+    const noImpact = a.impact === 'none' && a.impactBy === 'user' && (a.impactSeq ?? 0) > acc;
     return !revised && !noImpact;
   });
 }
@@ -368,6 +402,7 @@ function setAdrFileStatus(file, status, note) {
   fs.writeFileSync(file, next);
   return next;
 }
+const adrDecisionBody = (text) => text.replace(STATUS_LINE, '').replace(/^#{2,4}\s*(?:status|상태)\.?\s*\n+[^\n]*\n?/im, '');
 
 // ---------- AGENTS.md 규칙 블록 ----------
 export function withRules(agents) {
@@ -378,16 +413,40 @@ export function withRules(agents) {
   return [...lines.slice(0, at), ...(at ? [''] : []), RULES_BLOCK, '', ...lines.slice(at)].join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
-// 본문이 ID를 언급하는지. ADR은 "ADR-0014", "ADR 0014", "0014-파일명"처럼 번호만 쓴 표기도 인정한다.
+// 범위 표기를 찾는다. 두 형태만 범위로 본다.
+// 1) 양 끝 접두어: "DIR-015~DIR-018", "DIR-015 - DIR-018", "DIR-015—DIR-018". 구분자는 ~ – — -(앞뒤 공백 허용), 시작 ≤ 끝.
+// 2) 끝 번호에 접두어 없음: "DIR-015~018", "DIR 015–018", "DIR-015-018". 구분자는 공백 없는 ~ – -, 양 끝 자릿수가 같고
+//    시작 ≤ 끝이며 폭이 MAX_BARE_RANGE 이하. 공백 뒤 맨 숫자("DIR-015 – 300문항", "DIR-016 — 2026년")나 폭이 넓은
+//    번호("DIR-015-300")는 산문·다른 숫자일 수 있어 범위로 보지 않는다(미반영 지시를 언급으로 오인하지 않는다).
+const MAX_BARE_RANGE = 50;
+function inRange(body, prefix, n) {
+  const both = new RegExp(`${prefix}[\\s_-]?(\\d{3,4})\\s*[~–—-]\\s*${prefix}[\\s_-]?(\\d{3,4})(?!\\d)`, 'gi');
+  for (const r of body.matchAll(both)) {
+    const lo = Number(r[1]);
+    const hi = Number(r[2]);
+    if (lo <= hi && n >= lo && n <= hi) return true;
+  }
+  const bare = new RegExp(`${prefix}[\\s_-]?(\\d{3,4})[~–-](\\d{3,4})(?!\\d)`, 'gi');
+  for (const r of body.matchAll(bare)) {
+    if (r[1].length !== r[2].length) continue;
+    const lo = Number(r[1]);
+    const hi = Number(r[2]);
+    if (lo <= hi && hi - lo <= MAX_BARE_RANGE && n >= lo && n <= hi) return true;
+  }
+  return false;
+}
+
+// 본문이 ID를 언급하는지. 더 긴 번호의 일부("DIR-0150" 안의 "DIR-015")는 언급이 아니다.
+// ADR은 "ADR-0014", "ADR 0014", "0014-파일명"처럼 번호만 쓴 표기도 인정한다.
 export function mentions(body, id) {
-  if (body.includes(id)) return true;
+  const exact = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (new RegExp(`(^|[^A-Za-z0-9])${exact}(?![0-9])`).test(body)) return true;
+  const d = id.match(/^DIR-(\d{3,4})$/);
+  if (d) return inRange(body, 'DIR', Number(d[1]));
   const m = id.match(/^ADR-(\d{3,4})$/);
   if (!m) return false;
   if (new RegExp(`(ADR[\\s_-]?${m[1]}\\b|(^|[^0-9])${m[1]}-[a-z])`, 'i').test(body)) return true;
-  // 범위 표기 "ADR-0009~0013", "ADR 0009–0013"
-  const n = Number(m[1]);
-  for (const r of body.matchAll(/ADR[\s_-]?(\d{3,4})\s*[~–—-]\s*(?:ADR[\s_-]?)?(\d{3,4})/gi)) if (n >= Number(r[1]) && n <= Number(r[2])) return true;
-  return false;
+  return inRange(body, 'ADR', Number(m[1]));
 }
 
 // ---------- 검사 ----------
@@ -427,13 +486,24 @@ export function check(P, { close = false } = {}) {
   }
 
   // 3) ADR: 현재 브랜치에 파일이 있으면 상태 줄이 원장과 같아야 하고, 없으면 다른 브랜치에만 있는 결정이다.
+  for (const e of events.filter((e) => e.type === 'adr.status' && e.snapshot && e.sha256)) {
+    const snap = readSnap(P, e.snapshot);
+    if (!snap || sha256(snap) !== e.sha256) errors.push(`${e.id} #${e.seq} ADR 스냅샷이 기록 시점과 다르다.`);
+  }
   for (const a of state.adrs.values()) {
+    const snap = readSnap(P, a.snapshot);
+    const refSnap = gitBuf(['show', `${REF}:${a.snapshot}`], P.top);
+    if (snap && refSnap && !snap.equals(refSnap)) errors.push(`${a.id} ADR 스냅샷이 이력 ref와 다르다.`);
+    if (!snap) errors.push(`${a.id} ADR 스냅샷 없음(${a.snapshot}).`);
+    if (a.impact === 'none' && a.impactBy !== 'user') warns.push(`${a.id} 과거 에이전트의 영향 없음 선언은 사용자 확정이 없어 계획 반영으로 인정하지 않는다.`);
     const f = path.join(P.top, a.file ?? '');
     if (!a.file || !fs.existsSync(f)) {
       warns.push(`${a.id}(${a.status})가 현재 브랜치에 없다(${a.file}). 다른 브랜치에서 결정됐다 → 정본 브랜치로 병합한다.`);
       continue;
     }
     const text = fs.readFileSync(f, 'utf8');
+    if (snap && ['accepted', 'rejected', 'superseded'].includes(a.status) && !Buffer.from(text).equals(snap))
+      (close ? errors : warns).push(`${a.id} 확정 ADR 본문이 기록 스냅샷과 다르다. 결정 변경은 새 ADR로 대체하고 검증 기록은 별도 문서에 남긴다.`);
     const fileStatus = adrFileStatus(text);
     if (fileStatus === null) warns.push(`${a.id} 파일 상태 줄이 없거나 인식할 수 없다(${adrStatusRaw(text) || '없음'}). 원장 상태 ${a.status} 기준. 사용자 확인 후 \`plan adr accept|propose\`로 표기를 맞춘다.`);
     else if (fileStatus !== a.status) errors.push(`${a.id} 파일 상태(${fileStatus ?? '없음'})가 원장(${a.status})과 다르다. \`plan adr\` 로만 바꾼다.`);
@@ -441,6 +511,7 @@ export function check(P, { close = false } = {}) {
 
   // 4) ADR → 계획 반영.
   for (const a of pendingAdrs(state)) (close ? errors : warns).push(`${a.id}가 현재 계획(REV-${state.plan?.rev ?? 0}) 이후 accepted 됐지만 계획에 반영되지 않았다.`);
+  if (state.plan && !state.plan.adr_basis) warns.push(`REV-${state.plan.rev}는 구형 계획으로 ADR 기준점(adr_basis)이 없다. 다음 승인 개정에서 기준점을 명시한다(기존 원장 재작성 금지).`);
 
   // 5) 캡슐 예산·완전성·신선도(작업트리 사본은 생성물이라 낡으면 경고).
   let capsule = null;
@@ -478,11 +549,16 @@ export function check(P, { close = false } = {}) {
   if (untriaged.length) (close ? errors : warns).push(`미분류 사용자 입력 ${untriaged.length}건. \`plan triage --list\` 로 분류한다.`);
 
   // 8) "사용자 승인" 인용이 실제 입력에 있었는지(지어낸 승인 탐지). inbox는 로컬 전용이라 CI에서는 건너뛴다.
-  const norm = (t) => oneLine(t).replace(/[「」"'`]/g, '');
-  const said = inbox.map((x) => norm(x.prompt));
+  const said = inbox.filter((x) => !x.origin || x.origin === 'user').map((x) => String(x.prompt));
   const quoted = events.filter((e) => e.by === 'user' && e.quote);
   if (quoted.length && !said.length) warns.push('입력 포착(inbox)이 없어 사용자 인용을 대조할 수 없다. 도구별 capture 훅을 설치한다.');
-  else for (const e of quoted) if (!said.some((s) => s.includes(norm(e.quote)))) warns.push(`#${e.seq} ${e.type} 사용자 인용 「${cut(e.quote, 30)}」이 포착된 입력에 없다(지어낸 승인 의심).`);
+  else for (const e of quoted) {
+    if (e.approval) {
+      const r = inbox.find((r) => r.id === e.approval.ref);
+      if (r && (r.origin !== 'user' || sha256(r.prompt) !== e.approval.sha256 || !String(r.prompt).includes(e.quote))) errors.push(`#${e.seq} 승인 원문 증거가 포착 당시와 다르다.`);
+      else if (!r && !fromRef) warns.push(`#${e.seq} 승인 원문 증거(${e.approval.ref})가 로컬 inbox에 없어 대조 불가.`);
+    } else if (!said.some((s) => s.includes(e.quote))) warns.push(`#${e.seq} ${e.type} 사용자 인용 「${cut(e.quote, 30)}」이 포착된 입력에 없다(지어낸 승인 의심).`);
+  }
   return { errors, warns, state };
 }
 
@@ -506,7 +582,7 @@ export function listInbox(P) {
           }
         })
         .filter(Boolean),
-    );
+    ).filter((r) => r.origin !== 'agent');
 }
 export function capture(P, { tool, payload }) {
   let obj = {};
@@ -518,14 +594,15 @@ export function capture(P, { tool, payload }) {
   const prompt = obj.prompt ?? obj.user_prompt ?? obj.message ?? obj.input ?? '';
   if (!String(prompt).trim()) return null;
   const ts = new Date().toISOString();
-  const rec = { id: sha256(ts + prompt).slice(0, 12), ts, tool, session: obj.session_id ?? obj.sessionId ?? null, cwd: obj.cwd ?? P.top, prompt };
+  const origin = obj.origin ?? (obj.role === 'assistant' || obj.parent_session_id ? 'agent' : ['claude', 'codex', 'grok', 'test'].includes(tool) ? 'user' : 'unknown');
+  const rec = { id: sha256(ts + prompt).slice(0, 12), ts, tool, session: obj.session_id ?? obj.sessionId ?? null, cwd: obj.cwd ?? P.top, origin, message: obj.message_id ?? null, parent_session: obj.parent_session_id ?? null, prompt };
   fs.mkdirSync(P.inbox, { recursive: true });
   fs.appendFileSync(path.join(P.inbox, `${ts.slice(0, 7)}.jsonl`), JSON.stringify(rec) + '\n');
   return rec;
 }
 // 사용자 인용으로 쓰인 입력은 그 이벤트의 근거로 자동 분류한다.
 export function consumeQuote(P, ev) {
-  if (!ev?.quote) return;
+  if (!ev?.quote || ev.approval) return;
   const q = oneLine(ev.quote);
   const state = fold(readLedger(P).events);
   const refs = listInbox(P)
@@ -759,7 +836,7 @@ export function main(argv, cwd = process.cwd()) {
         return out(`${arg} 변경 기록.`);
       }
       if (sub === 'set') {
-        const ev = { type: 'directive.status', id: arg, status: flags.status, by, quote: flags.quote };
+        const ev = { type: 'directive.status', id: arg, status: flags.status, by, quote: flags.quote, approval_ref: flags['approval-ref'] };
         for (const k of ['evidence', 'blocker', 'unblock', 'work', 'next', 'superseded_by']) if (flags[k]) ev[k] = flags[k];
         consumeQuote(P, appendEvent(P, ev));
         render(P);
@@ -768,7 +845,7 @@ export function main(argv, cwd = process.cwd()) {
       break;
     }
     case 'order':
-      consumeQuote(P, appendEvent(P, { type: 'order.set', order: String(flags.ids).split(','), by, quote: flags.quote }));
+      consumeQuote(P, appendEvent(P, { type: 'order.set', order: String(flags.ids).split(','), by, quote: flags.quote, approval_ref: flags['approval-ref'] }));
       render(P);
       return out('순서 기록.');
     case 'revise': {
@@ -777,6 +854,19 @@ export function main(argv, cwd = process.cwd()) {
       const buf = fs.readFileSync(path.join(P.top, file));
       const rev = state.plan ? state.plan.rev + 1 : Number(flags.rev ?? 1);
       const snap = `revisions/REV-${String(rev).padStart(3, '0')}.md`;
+      const body = buf.toString('utf8');
+      const carry = body.match(/<!-- ADR-BASIS:carry-forward REV-(\d+) sha256:([0-9a-f]{64}) -->/);
+      if (carry && (!state.plan || Number(carry[1]) !== state.plan.rev || carry[2] !== state.plan.sha256)) throw new Error('ADR 기준점 계승은 직전 승인 REV 번호·sha256과 같아야 한다.');
+      const adr_basis = [];
+      for (const a of state.adrs.values()) {
+        if (a.status !== 'accepted') continue;
+        const prior = state.plan?.adr_basis?.find((b) => b.id === a.id && b.accepted_seq === a.acceptedSeq);
+        const legacy = !state.plan?.adr_basis && state.plans.some((p) => p.seq > (a.acceptedSeq ?? 0) && p.triggers?.includes(a.id));
+        if (!mentions(body, a.id) && !(carry && (prior || legacy))) continue;
+        const adrSnap = readSnap(P, a.snapshot);
+        if (!adrSnap) throw new Error(`${a.id} ADR 기준점 스냅샷 없음.`);
+        adr_basis.push({ id: a.id, accepted_seq: a.acceptedSeq, sha256: sha256(adrSnap) });
+      }
       const ev = appendEvent(
         P,
         {
@@ -789,6 +879,8 @@ export function main(argv, cwd = process.cwd()) {
           triggers: String(flags.triggers ?? '').split(',').filter(Boolean),
           by,
           quote: flags.quote,
+          approval_ref: flags['approval-ref'],
+          adr_basis,
         },
         [{ rel: snap, buf }],
       );
@@ -804,9 +896,11 @@ export function main(argv, cwd = process.cwd()) {
         const file = flags.file ?? state.adrs.get(arg)?.file;
         const f = path.join(P.top, file);
         const before = fs.readFileSync(f, 'utf8');
+        const previous = state.adrs.get(arg);
+        if (status === 'accepted' && previous?.status === 'accepted' && readSnap(P, previous.snapshot)?.equals(Buffer.from(before))) return out(`${arg} accepted(같은 확정본, 변경 없음).`);
         const after = setAdrFileStatus(f, status);
         try {
-          appendEvent(P, { type: 'adr.status', id: arg, status, file, by }, snapOf(arg, after));
+          appendEvent(P, { type: 'adr.status', id: arg, status, file, by, quote: flags.quote, approval_ref: flags['approval-ref'] }, snapOf(arg, after));
         } catch (e) {
           if (after !== before) fs.writeFileSync(f, before); // 원장 기록이 거부되면 파일도 되돌린다.
           throw e;
@@ -822,7 +916,7 @@ export function main(argv, cwd = process.cwd()) {
         const before = has ? fs.readFileSync(f, 'utf8') : null;
         const after = has ? setAdrFileStatus(f, 'superseded', `by ${flags.by}`) : null;
         try {
-          appendEvent(P, { type: 'adr.status', id: arg, status: 'superseded', superseded_by: flags.by, by }, has ? snapOf(arg, after) : []);
+          appendEvent(P, { type: 'adr.status', id: arg, status: 'superseded', superseded_by: flags.by, by, quote: flags.quote, approval_ref: flags['approval-ref'] }, has ? snapOf(arg, after) : []);
         } catch (e) {
           if (has && after !== before) fs.writeFileSync(f, before);
           throw e;
@@ -865,17 +959,17 @@ export function main(argv, cwd = process.cwd()) {
             continue;
           }
           const status = st ?? 'proposed';
-          appendEvent(P, { type: 'adr.status', id, status, file: rel(f), by: 'agent', note: `${st ? 'import' : 'import: 상태 표기 인식 불가'}${ref ? ` (브랜치 ${ref}에만 있음)` : ''}` }, snapOf(id, text));
+          appendEvent(P, { type: 'adr.status', id, status, file: rel(f), by: 'agent', source: 'migration', note: `${st ? 'import' : 'import: 상태 표기 인식 불가'}${ref ? ` (브랜치 ${ref}에만 있음)` : ''}` }, snapOf(id, text));
           report.push(`${id} ${status}${ref ? ` [${ref}]` : ''}${st ? '' : ` (상태 표기 인식 불가: 「${adrStatusRaw(text) || '상태 줄 없음'}」 → 사용자 확인 필요)`}`);
         }
         for (const x of later) {
           const cur = fold(readLedger(P).events).adrs.get(x.by);
           if (x.by && cur?.status === 'accepted') {
-            appendEvent(P, { type: 'adr.status', id: x.id, status: 'accepted', file: rel(x.f), by: 'agent', note: 'import' }, snapOf(x.id, x.text));
-            appendEvent(P, { type: 'adr.status', id: x.id, status: 'superseded', superseded_by: x.by, by: 'agent', note: 'import' });
+            appendEvent(P, { type: 'adr.status', id: x.id, status: 'accepted', file: rel(x.f), by: 'agent', source: 'migration', note: 'import' }, snapOf(x.id, x.text));
+            appendEvent(P, { type: 'adr.status', id: x.id, status: 'superseded', superseded_by: x.by, by: 'agent', source: 'migration', source: 'migration', note: 'import' });
             report.push(`${x.id} superseded by ${x.by}`);
           } else {
-            appendEvent(P, { type: 'adr.status', id: x.id, status: 'deprecated', file: rel(x.f), by: 'agent', note: 'import: 대체 ADR 불명' }, snapOf(x.id, x.text));
+            appendEvent(P, { type: 'adr.status', id: x.id, status: 'deprecated', file: rel(x.f), by: 'agent', source: 'migration', note: 'import: 대체 ADR 불명' }, snapOf(x.id, x.text));
             report.push(`${x.id} 대체됨 표기지만 대체 ADR을 찾지 못함 → 사용자 확인 필요(원장에는 deprecated, 파일 상태와 불일치 오류로 표시됨)`);
           }
         }
@@ -884,7 +978,7 @@ export function main(argv, cwd = process.cwd()) {
         return out(report.join('\n') || '(새로 이관할 ADR 없음)');
       }
       if (sub === 'impact') {
-        consumeQuote(P, appendEvent(P, { type: 'adr.impact', id: arg, impact: 'none', reason: flags.reason, by, quote: flags.quote }));
+        consumeQuote(P, appendEvent(P, { type: 'adr.impact', id: arg, impact: 'none', reason: flags.reason, by, quote: flags.quote, approval_ref: flags['approval-ref'] }));
         render(P);
         return out(`${arg} 계획 영향 없음 기록(${by}).`);
       }
@@ -900,7 +994,7 @@ export function main(argv, cwd = process.cwd()) {
     case 'triage': {
       const state = fold(readLedger(P).events);
       const rows = listInbox(P).filter((x) => !state.triaged.has(x.id));
-      if (flags.list) return out(rows.map((r) => `${r.id} ${r.ts} ${r.tool}${DIRECTIVE_LIKE.test(r.prompt) ? ' [지시형]' : ''} 「${cut(r.prompt, 80)}」`).join('\n') || '(미분류 없음)');
+      if (flags.list) return out(rows.map((r) => `${r.id} ${r.ts} ${r.tool}${r.origin !== 'user' ? ` [출처 ${r.origin ?? 'legacy'}]` : ''}${DIRECTIVE_LIKE.test(r.prompt) ? ' [지시형]' : ''} 「${cut(r.prompt, 80)}」`).join('\n') || '(미분류 없음)');
       if (flags['rest-as']) {
         // 나머지 일괄 분류. 지시형 문장은 일괄로 버릴 수 없다(하나씩 판단).
         const risky = rows.filter((r) => DIRECTIVE_LIKE.test(r.prompt));
@@ -917,6 +1011,10 @@ export function main(argv, cwd = process.cwd()) {
       return out(`${CAPSULE_REL} 갱신.`);
     case 'check': {
       const { errors, warns } = check(P, { close: !!flags.close });
+      if (flags.json) {
+        out(JSON.stringify({ schema: 1, errors, warns }));
+        return errors.length ? 1 : 0;
+      }
       for (const w of warns) out(`WARN ${w}`);
       for (const e of errors) out(`ERROR ${e}`);
       if (!errors.length) out(`OK plan check${flags.close ? ' --close' : ''}`);
@@ -939,7 +1037,7 @@ export function main(argv, cwd = process.cwd()) {
     }
     case 'capture': {
       // --text 는 설치 세션처럼 훅 밖에서 받은 사용자 원문을 그대로 남길 때 쓴다(요약·의역 금지).
-      capture(P, { tool: flags.tool ?? 'unknown', payload: typeof flags.text === 'string' ? JSON.stringify({ prompt: flags.text }) : readStdin() });
+      capture(P, { tool: flags.tool ?? 'unknown', payload: typeof flags.text === 'string' ? JSON.stringify({ prompt: flags.text, origin: 'manual' }) : readStdin() });
       if (flags.remind && (flags.format === 'claude' || flags.format === 'codex')) {
         const r = remind(cwd);
         if (r) out(JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: r } }));
