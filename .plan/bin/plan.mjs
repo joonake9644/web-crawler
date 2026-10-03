@@ -147,7 +147,7 @@ export function appendEvent(P, event, files = []) {
     if (fromRef) throw new Error('작업 원장이 없다(이력 ref만 있음). `plan restore`로 복구한 뒤 기록한다.');
     const full = { schema: 3, seq: (events.at(-1)?.seq ?? 0) + 1, ts: event.ts ?? new Date().toISOString(), ...event };
     if (full.by === 'user' && full.quote) {
-      const candidates = listInbox(P).filter((r) => r.origin === 'user' && String(r.prompt).includes(String(full.quote ?? '')) && full.quote && (!full.approval_ref || r.id === full.approval_ref));
+      const candidates = listInbox(P).filter((r) => r.origin === 'user' && !syntheticPrompt(r.prompt) && String(r.prompt).includes(String(full.quote ?? '')) && full.quote && (!full.approval_ref || r.id === full.approval_ref));
       if (candidates.length !== 1) throw new Error('승인 원문을 실제 사용자 입력 한 건에 연결해야 한다. `--approval-ref <inbox ID>`로 지정한다. 수동 --text·출처 불명·에이전트 입력은 승인 근거가 아니다.');
       const r = candidates[0];
       full.approval = { ref: r.id, sha256: sha256(r.prompt), origin: r.origin, tool: r.tool, session: r.session };
@@ -584,6 +584,7 @@ export function listInbox(P) {
         .filter(Boolean),
     ).filter((r) => r.origin !== 'agent');
 }
+const syntheticPrompt = (prompt) => /<(?:agent-message|task-notification|system-reminder)(?:\s|>)/i.test(String(prompt));
 export function capture(P, { tool, payload }) {
   let obj = {};
   try {
@@ -594,7 +595,9 @@ export function capture(P, { tool, payload }) {
   const prompt = obj.prompt ?? obj.user_prompt ?? obj.message ?? obj.input ?? '';
   if (!String(prompt).trim()) return null;
   const ts = new Date().toISOString();
-  const origin = obj.origin ?? (obj.role === 'assistant' || obj.parent_session_id ? 'agent' : ['claude', 'codex', 'grok', 'test'].includes(tool) ? 'user' : 'unknown');
+  const synthetic = obj.role === 'assistant' || obj.parent_session_id || obj.synthetic || obj.ignored || syntheticPrompt(prompt);
+  const nativePrompt = ['claude', 'codex', 'grok'].includes(tool) && (obj.hook_event_name ?? obj.hookEventName) === 'UserPromptSubmit' && (obj.session_id ?? obj.sessionId);
+  const origin = synthetic ? 'agent' : obj.origin ?? (nativePrompt ? 'user' : 'unknown');
   const rec = { id: sha256(ts + prompt).slice(0, 12), ts, tool, session: obj.session_id ?? obj.sessionId ?? null, cwd: obj.cwd ?? P.top, origin, message: obj.message_id ?? null, parent_session: obj.parent_session_id ?? null, prompt };
   fs.mkdirSync(P.inbox, { recursive: true });
   fs.appendFileSync(path.join(P.inbox, `${ts.slice(0, 7)}.jsonl`), JSON.stringify(rec) + '\n');
