@@ -31,7 +31,9 @@ scrapling[fetchers]>=0.4.8,<0.5
 #     정확히 같은 버전을 원하면 lockfile 가 필요하다 — 이 저장소에는 없다.
 #   허용 범위 1.62 ~ 1.63.x. 상한 <1.64 는 1.64 출시에 patchright 를 두고
 #   독주하는 것을 막는 브레이크다. 값은 2026-09-28 pypi.org 실측(양쪽 최신 1.63.0,
-#   1.64 미출시). 1.64 가 나오면 두 줄을 함께 올린다.
+#   1.64 미출시). 두 패키지 모두에 1.64 가 나온 뒤에만 두 줄을 함께 올린다.
+#   한쪽만 나온 동안은 그대로 둔다 — 2026-10-15 실측: playwright 1.64.0 출시
+#   (2026-10-13), patchright 는 1.63.0 이 최신. 지금이 브레이크가 일하는 구간이다.
 playwright>=1.62,<1.64       # scripts/chrome_cdp.py, scripts/preflight.py, 생성 crawl_script.py(SPA 인터셉트)
 curl_cffi>=0.16              # 사다리 4단 경량 그리드
 patchright>=1.62,<1.64       # StealthyFetcher 런타임 (scripts/bootstrap.py 가 설치 검증)

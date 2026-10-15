@@ -9,19 +9,19 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `b5d814b2e97e857b8fc2e7a64178283e07d3059e558a0934c3421713cff392f7`
+- 입력 다이제스트: `76edbcd10e65f278b43081842c083fdc35d748d866e8eb013aae48036aa9674b`
 
 ## 상태 한 줄 요약
 
 - 활성 작업: **PY311-001** — 계약 `docs/task-contracts/PY311-001.md`
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `POST_CHECK` / dirty=`False`
-- 검증 커밋: `a72ca27`
-- 작업 도구: **opencode-go/deepseek-v4.1-flash**
+- 검증 커밋: `0f69926`
+- 작업 도구: **codex/gpt-6.1-sol (reasoning high)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `a72ca27` · 브랜치 `chore/harness-004-claude-md-map`
+측정 시점 HEAD: `0f69926` · 브랜치 `chore/harness-integrity-20261003`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 587 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 588 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 14개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,6 +39,11 @@
 
 ## 이번 세션에 한 일
 
+- 0f69926 fix(requirements): 상한 상향 조건을 '두 패키지 모두 출시'로 못 박는다 (PY311-001)
+- e75e3ee fix(harness): reject synthetic native hook approvals
+- 1aea763 fix(harness): verify approval and ADR provenance
+- 331c7ca Merge pull request #2 from joonake9644/chore/harness-004-claude-md-map
+- 0dc1eb8 chore(harness): 세션 종료 — 상태를 닫고 핸드오프를 생성한다 (HARNESS-004)
 - a72ca27 docs(harness): CLAUDE.md 를 200줄 미만 지도로 줄이고 안전 규칙을 이관한다 (HARNESS-004)
 - 2d6df1e docs(reference): getdesign.ai 대조 기록을 참고자료로 저장한다
 - 19703ca Merge pull request #1 from joonake9644/chore/plan-harness-v2
@@ -46,11 +51,6 @@
 - e2c91d5 fix(harness): 라운드 5 리뷰 finding 을 닫고 캐리 폴백을 라벨 단위로 넓힌다
 - 1917b0e chore(harness): 세션 종료 — 라운드 4 리뷰 기록을 반영한다
 - ef6eb3b fix(harness): 캐리 파서·부트스트랩 결함 9건을 독립 리뷰 후 닫는다
-- ab0f712 chore(harness): 세션 종료 — HARNESS-003 리뷰 기록을 반영한다
-- f8e85ad docs(harness): 진입 문서를 지도 역할로 줄이고 중복 절을 원문 이관한다 (HARNESS-003)
-- 9207374 chore(harness): 세션 종료 — HARNESS-002 리뷰 기록을 반영하고 상태를 갱신한다
-- 986bfdf fix(harness): 핸드오프가 경쟁 정본(.context)을 지시하던 것을 정본으로 바로잡는다
-- f8f2505 docs(contract): 상한 <1.64 가 아직 유효함을 pypi 로 재확인한다
 
 ## 남은 것 / 다음 세션
 

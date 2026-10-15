@@ -103,6 +103,50 @@ def test_playwright_and_patchright_constraints_identical():
     )
 
 
+_PLAYWRIGHT_DECL = re.compile(r"\s*playwright\s*(?:[<>=!~;\[]|$)", re.IGNORECASE)
+
+
+def _coupling_comment() -> str:
+    """ADR-002 결합 주석 블록(`⚠ playwright 와 patchright` 부터 playwright 선언 줄 앞까지).
+
+    공백을 한 칸으로 정규화해 돌려준다 — 줄바꿈 위치가 바뀌어도 문장 검사가 흔들리지 않는다.
+    끝은 시작점 **뒤의** 정확한 `playwright` 선언이다. 선행 공백이 있거나
+    `playwright-stealth` 같은 다른 패키지 줄이 끼어도 거기서 잘리지 않는다(2026-10-15 독립 리뷰 [Low]).
+    """
+    lines = REQUIREMENTS.read_text(encoding="utf-8").splitlines()
+    start = next((i for i, l in enumerate(lines) if "playwright 와 patchright" in l), None)
+    end = None
+    if start is not None:
+        end = next((i for i in range(start + 1, len(lines)) if _PLAYWRIGHT_DECL.match(lines[i])), None)
+    assert start is not None and end is not None, (
+        "requirements.txt 에서 ADR-002 결합 주석 블록을 찾지 못했습니다"
+    )
+    block = [l.strip().lstrip("#").strip() for l in lines[start:end] if l.strip().startswith("#")]
+    return " ".join(" ".join(block).split())
+
+
+def test_upper_bound_raise_waits_for_both_packages():
+    """상한을 올리는 조건은 '두 패키지 **모두** 다음 마이너가 출시됐을 때'다(ADR-002).
+
+    2026-10-15 pypi.org 실측: playwright 1.64.0 은 2026-10-13 출시, patchright 는
+    1.63.0 이 최신이다. 옛 주석 "1.64 가 나오면 두 줄을 함께 올린다" 는 이 상태에서
+    상한을 올리라는 뜻으로 읽힌다 — 올리면 playwright 1.64 + patchright 1.63 으로
+    갈라져 브레이크가 막으려던 바로 그 분할이 생긴다.
+    """
+    comment = _coupling_comment()
+    upper = _version_upper_bound(_constraint("playwright"))
+    assert "1.64 가 나오면 두 줄을 함께 올린다" not in comment, (
+        "한쪽만 출시돼도 상한을 올리라고 읽히는 옛 문장이 남아 있습니다 (ADR-002)"
+    )
+    # 낱말("두 패키지 모두")만 보면 "두 패키지 모두의 상한은 playwright 1.64 출시 즉시
+    # 올린다" 도 통과한다(2026-10-15 독립 리뷰 [Low]). 조건 문장 전체를, 현재 상한 값으로 본다.
+    for sentence in (f"두 패키지 모두에 {upper} 가 나온 뒤에만 두 줄을 함께 올린다",
+                     "한쪽만 나온 동안은 그대로 둔다"):
+        assert sentence in comment, (
+            f"상한을 올리는 조건 문장 「{sentence}」 이 주석에 없습니다 (ADR-002)"
+        )
+
+
 def test_scrapling_has_upper_bound():
     """pre-1.0 이고 v0.3 breaking 전력이 있어 상한이 필수다."""
     assert "<0.5" in _declared()["scrapling"], (
