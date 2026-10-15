@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "POST_CHECK",
   "dirty": false,
-  "verified_commit": "a72ca27",
+  "verified_commit": "0f69926",
   "session_end": {
     "independent_review": {
       "status": "passed",
-      "model": "opencode-go/deepseek-v4.1-flash",
-      "findings_fixed": 3,
-      "note": "HARNESS-004(CLAUDE.md 464→100줄 지도화 + 안전 규칙을 docs/crawl-reference.md 로 원문 이관 + 통지 게이트 테스트 앵커 재지정)를 독립 리뷰어(reviewer 서브에이전트)로 리뷰. 판정 PASS — Blocker/High/Medium 0, Low 3·nit 1. Low 3건 전부 수정: AGENTS.md 옛 참조 2곳 재지정, crawl-reference 의 '위 블록' 참조 정정, CLAUDE.md 지도에 README 링크 흡수. nit 1건(안전 요약 약한 substring 검사)은 권위 텍스트가 crawl-reference.md 에 강하게 고정돼 있어 미조치. 리뷰어는 실행 차단 환경이라 pytest/계약 실행을 UNVERIFIED 로 표기했고, 메인이 587 passed·계약 5종 exit 0·주간검사 0 WARN 을 직접 재실측했다. HARNESS-004 는 사용자 지시 DIR-001(하네스 남은 WARN 해소). 상세는 docs/task-contracts/PY311-001.md 의 HARNESS-004 절."
+      "model": "codex/gpt-6.1-sol (reasoning high)",
+      "findings_fixed": 2,
+      "note": "2026-10-15 세션: PY311-001 시간기반 UNVERIFIED 재측정 — playwright 1.64.0 출시(2026-10-13)·patchright 1.63.0 최신. 상한 <1.64 유지(3.11·3.14 uv 재해석 모두 1.63.0 짝). requirements.txt 의 오독 가능 주석('1.64 가 나오면 두 줄을 함께 올린다')을 '두 패키지 모두에 1.64 가 나온 뒤에만'으로 고치고 test_upper_bound_raise_waits_for_both_packages 로 고정(RED 확인). 독립 리뷰 Codex gpt-6.1-sol: Blocker/High/Medium 0, Low 2(낱말 검사 거짓 통과·블록 끝 탐색 거짓 실패) — 메인이 변이로 재현 후 수정, 변이 6종 기대대로. 588 passed·계약 6종 exit 0. 같은 브랜치의 하네스 배포 커밋 1aea763·e75e3ee 는 원본 plan-continuity-harness-v2@5836ad6 과 바이트 동일, 원본 테스트 60/60 통과(verifier 실측). 상세는 docs/task-contracts/PY311-001.md 2026-10-15 절."
     }
   }
 }
