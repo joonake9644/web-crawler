@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `76edbcd10e65f278b43081842c083fdc35d748d866e8eb013aae48036aa9674b`
+- 입력 다이제스트: `ffee9761337808b70902b6abf5b85cf2394161fc3b09dee0e09842c26f9450cb`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `0f69926` · 브랜치 `chore/harness-integrity-20261003`
+측정 시점 HEAD: `2386eda` · 브랜치 `chore/plan-rev2-adr-basis`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,9 @@
 
 ## 이번 세션에 한 일
 
+- 2386eda chore(plan): REV-2 로 ADR 기준점을 명시해 구형 계획 WARN 을 닫는다 (PY311-001)
+- 27093fd Merge pull request #3 from joonake9644/chore/harness-integrity-20261003
+- 1064aba chore(harness): 세션 종료 — 1.64 재측정 리뷰 기록과 핸드오프를 반영한다 (PY311-001)
 - 0f69926 fix(requirements): 상한 상향 조건을 '두 패키지 모두 출시'로 못 박는다 (PY311-001)
 - e75e3ee fix(harness): reject synthetic native hook approvals
 - 1aea763 fix(harness): verify approval and ADR provenance
@@ -48,9 +51,6 @@
 - 2d6df1e docs(reference): getdesign.ai 대조 기록을 참고자료로 저장한다
 - 19703ca Merge pull request #1 from joonake9644/chore/plan-harness-v2
 - 17b74d9 chore(harness): 세션 종료 — 라운드 5 리뷰 기록을 반영한다
-- e2c91d5 fix(harness): 라운드 5 리뷰 finding 을 닫고 캐리 폴백을 라벨 단위로 넓힌다
-- 1917b0e chore(harness): 세션 종료 — 라운드 4 리뷰 기록을 반영한다
-- ef6eb3b fix(harness): 캐리 파서·부트스트랩 결함 9건을 독립 리뷰 후 닫는다
 
 ## 남은 것 / 다음 세션
 
