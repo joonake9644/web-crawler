@@ -9,19 +9,19 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `016b46606cb93a7f479a9d9ffed7aeddd6826b453936290198cb34cc7ee9d35a`
+- 입력 다이제스트: `9ec0eeb0b774a4207c95887dbfe1fbf0a6cc301b11ab38b4c96d397c0aa9d01b`
 
 ## 상태 한 줄 요약
 
 - 활성 작업: **PY311-001** — 계약 `docs/task-contracts/PY311-001.md`
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `POST_CHECK` / dirty=`False`
-- 검증 커밋: `0888b37`
+- 검증 커밋: `4b9c8d1`
 - 작업 도구: **codex/gpt-6.1-sol (reasoning high)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `0888b37` · 브랜치 `chore/py311-raise-1.65`
+측정 시점 HEAD: `4b9c8d1` · 브랜치 `fix/robots-404`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,26 +31,26 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 590 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 607 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
-| 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 14개 |
+| 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
 | 실행 계약 | `python scripts/sync_agent_contract.py --check` | exit=0 ✅ — 출력 없음 |
 
 ## 이번 세션에 한 일
 
+- 4b9c8d1 fix(utils): 풀리지 않은 3xx 를 허용으로 통과시키지 않고, 오류 본문 없이 코드로 판정한다 (DIR-002)
+- e337bba fix(utils): robots.txt 404·410 을 '확인 못 함' 이 아니라 '제한 없음' 으로 판정한다 (DIR-002)
+- 52fbe25 feat(fingerprints): www.shu.ac.kr 프로필 추가, books.toscrape.com 프로필 갱신
+- a8a92ee Merge pull request #5 from joonake9644/chore/py311-raise-1.65
+- 53ee6a7 Merge pull request #4 from joonake9644/chore/plan-rev2-adr-basis
+- 1167240 chore(harness): 세션 종료 — 1.65 상향 리뷰 기록과 핸드오프를 반영한다 (PY311-001)
 - 0888b37 fix(test): 허용 범위 검사가 지원하는 제약식 꼴만 읽게 한다 (PY311-001)
 - d26873c fix(requirements): 두 패키지 모두 1.64 출시로 상한을 함께 <1.65 로 올린다 (PY311-001)
 - b704f13 chore(harness): 세션 종료 — REV-2 리뷰 기록과 핸드오프를 반영한다 (PY311-001)
 - 0df4765 chore(plan): REV-2 로 ADR 기준점을 명시해 구형 계획 WARN 을 닫는다 (PY311-001)
 - 27093fd Merge pull request #3 from joonake9644/chore/harness-integrity-20261003
 - 1064aba chore(harness): 세션 종료 — 1.64 재측정 리뷰 기록과 핸드오프를 반영한다 (PY311-001)
-- 0f69926 fix(requirements): 상한 상향 조건을 '두 패키지 모두 출시'로 못 박는다 (PY311-001)
-- e75e3ee fix(harness): reject synthetic native hook approvals
-- 1aea763 fix(harness): verify approval and ADR provenance
-- 331c7ca Merge pull request #2 from joonake9644/chore/harness-004-claude-md-map
-- 0dc1eb8 chore(harness): 세션 종료 — 상태를 닫고 핸드오프를 생성한다 (HARNESS-004)
-- a72ca27 docs(harness): CLAUDE.md 를 200줄 미만 지도로 줄이고 안전 규칙을 이관한다 (HARNESS-004)
 
 ## 남은 것 / 다음 세션
 
