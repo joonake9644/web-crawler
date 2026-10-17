@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "POST_CHECK",
   "dirty": false,
-  "verified_commit": "0f69926",
+  "verified_commit": "0df4765",
   "session_end": {
     "independent_review": {
       "status": "passed",
       "model": "codex/gpt-6.1-sol (reasoning high)",
-      "findings_fixed": 2,
-      "note": "2026-10-15 세션: PY311-001 시간기반 UNVERIFIED 재측정 — playwright 1.64.0 출시(2026-10-13)·patchright 1.63.0 최신. 상한 <1.64 유지(3.11·3.14 uv 재해석 모두 1.63.0 짝). requirements.txt 의 오독 가능 주석('1.64 가 나오면 두 줄을 함께 올린다')을 '두 패키지 모두에 1.64 가 나온 뒤에만'으로 고치고 test_upper_bound_raise_waits_for_both_packages 로 고정(RED 확인). 독립 리뷰 Codex gpt-6.1-sol: Blocker/High/Medium 0, Low 2(낱말 검사 거짓 통과·블록 끝 탐색 거짓 실패) — 메인이 변이로 재현 후 수정, 변이 6종 기대대로. 588 passed·계약 6종 exit 0. 같은 브랜치의 하네스 배포 커밋 1aea763·e75e3ee 는 원본 plan-continuity-harness-v2@5836ad6 과 바이트 동일, 원본 테스트 60/60 통과(verifier 실측). 상세는 docs/task-contracts/PY311-001.md 2026-10-15 절."
+      "findings_fixed": 1,
+      "note": "2026-10-16 세션: 사용자 원문 「권장 작업 진행이죠」로 계획 REV-2 등록(원장 seq 36, 사유 ADR, 트리거 ADR-001·ADR-002, adr_basis 2건, approval origin=user). REV-1 범위·순서·완료 기준 계승(carry-forward). policy.json plan_approval revision 2·sha 3b255792. plan check 의 adr_basis WARN 해소. 독립 리뷰 Codex gpt-6.1-sol: Medium 1(정책 변경 커밋의 핸드오프 미재생성) — 메인이 재현(2 failed) 후 커밋에 합쳐 수정. 이전 작업 PR #3 은 사용자가 병합(27093fd). 상세는 docs/task-contracts/PY311-001.md '계획 REV-2' 절."
     }
   }
 }

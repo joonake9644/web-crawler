@@ -34,3 +34,22 @@ RED 확인을 먼저 로그로 남긴다. `test_playwright_has_upper_bound` 는 
 
 - ubuntu/x86_64 러너 통과 여부. 측정하지 않았다.
 - NORTH STAR 문장의 담당자 승인 (기존 상태 유지).
+
+## REV-2 — ADR 기준점 명시 (2026-10-16)
+
+<!-- ADR-BASIS:carry-forward REV-1 sha256:da7eb99e50c39feb1b823cbdfa0f4ffaadaa2e65d455ef71c481ed75b5d91ba4 -->
+
+**승인**: 저장소 소유자 — 원문 「권장 작업 진행이죠」 (권장 순서 1번 "REV-1 내용 그대로 ADR 기준점만 추가해 재승인" 에 대한 답)
+**사유**: `plan check` 의 유일한 WARN "REV-1는 구형 계획으로 ADR 기준점(adr_basis)이 없다" 를 닫는다.
+
+**범위·순서·완료 기준은 바꾸지 않는다.** 위 REV-1 본문을 그대로 계승하고, 이 계획이
+전제로 삼는 결정을 기준점으로 명시만 한다.
+
+| 결정 | 이 계획과의 관계 |
+|---|---|
+| ADR-001-harness-lean-install | 하네스 경량 설치 — 계획·연속성 검사의 전제 (원장 seq 5 사용자 확정 "영향 없음") |
+| ADR-002-playwright-patchright-coupling | 이 계획의 직접 근거 (REV-1 트리거) |
+
+REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/task-contracts/PY311-001.md`):
+- ubuntu/x86_64 러너 통과 — 2026-10-01 PR #1 CI 로 실측되어 위 UNVERIFIED 첫 항목은 닫혔다.
+- playwright 1.64.0 출시(2026-10-13)·patchright 1.63.0 최신(2026-10-15 실측) — 상한 `<1.64` 유지.
