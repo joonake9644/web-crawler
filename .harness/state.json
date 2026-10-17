@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "POST_CHECK",
   "dirty": false,
-  "verified_commit": "0888b37",
+  "verified_commit": "4b9c8d1",
   "session_end": {
     "independent_review": {
       "status": "passed",
       "model": "codex/gpt-6.1-sol (reasoning high)",
       "findings_fixed": 3,
-      "note": "2026-10-17 세션: 계약 재확인 조건(patchright 1.64 출시) 충족 — pypi 실측 playwright 1.64.0·patchright 1.64.1. ADR-002 대로 두 줄을 함께 <1.65 로 올림(d26873c). 3.11.15·3.14.7 격리 venv 에서 단위 589 passed·e2e phase3 3 passed, 해석 3축 exit 0. 주석 허용 범위 검사 신설. 독립 리뷰 Codex gpt-6.1-sol: Low 3(새 테스트 경계 처리) — 메인이 변이로 재현 후 수정(0888b37). 상세는 docs/task-contracts/PY311-001.md '상한 <1.65 상향' 절."
+      "note": "2026-10-17 세션(DIR-002): robots.txt 404·410 이 '확인 못 함' 으로 보고되던 결함(ROBOTS-001) 수정 — _fetch_robots 가 HTTPError 를 코드로 돌려주고, check_robots 는 404·410 만 제한 없음, 그 밖의 비-2xx 는 error. 로컬 ThreadingHTTPServer 로 실제 경로 검사. 독립 리뷰 1차 Medium 1(3xx 회귀)·Low 2 → 재현 후 수정(4b9c8d1), 2차 재검토 '추가 finding 없음'. 기준선 복구로 www.shu.ac.kr 프로필 추가(52fbe25). 상세는 docs/task-contracts/PY311-001.md 'ROBOTS-001' 절."
     }
   }
 }

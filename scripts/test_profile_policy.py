@@ -349,6 +349,7 @@ def test_expected_public_count():
         "www_gsmarena_com",
         "www_k-startup_go_kr",
         "www_kurly_com",
+        "www_shu_ac_kr",
     ]
 
 
