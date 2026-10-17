@@ -259,6 +259,67 @@ def test_robots_network_error_is_reported_not_swallowed(monkeypatch):
     assert result["allowed"] is True     # 차단 근거가 없으므로 막지는 않는다
 
 
+@pytest.fixture
+def robots_server():
+    """robots.txt 를 정해진 상태 코드로 돌려주는 로컬 서버 — `_fetch_robots` 를 가짜로 바꾸지 않는다.
+
+    위 테스트들은 `_fetch_robots` 를 `(본문, 404)` 를 돌려주는 가짜로 바꿔서, 실제 `urlopen` 이
+    404 에서 값이 아니라 `HTTPError` 를 던진다는 사실을 한 번도 지나가지 않았다(2026-10-17 실측:
+    books.toscrape.com·www.shu.ac.kr 의 404 가 '확인 못 함' 으로 보고됨).
+    """
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    reply = {"status": 200, "body": ""}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = reply["body"].encode("utf-8")
+            self.send_response(reply["status"])
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def serve(status, body=""):
+        reply.update(status=status, body=body)
+        return f"http://127.0.0.1:{server.server_address[1]}/list"
+
+    yield serve
+    server.shutdown()
+    server.server_close()
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_robots_real_missing_file_allows_without_error(robots_server, status):
+    """파일이 없다(404·410)는 응답은 '제한 없음' 이다 — '확인 못 함' 이 아니다 (RFC 9309 §2.3.1.3)."""
+    result = check_robots(robots_server(status, "Not Found"))
+    assert result["error"] is None, result["error"]
+    assert result["allowed"] is True
+
+
+@pytest.mark.parametrize("status", [401, 403, 500, 503])
+def test_robots_real_other_errors_stay_unverified(robots_server, status):
+    """403 은 WAF 가 막은 것일 수 있고 5xx 는 서버 장애다 — 허용으로 단정하지 않고 '확인 못 함' 으로 남긴다."""
+    result = check_robots(robots_server(status, "nope"))
+    assert result["error"] is not None
+    assert str(status) in result["error"]
+
+
+def test_robots_real_disallow_is_enforced(robots_server):
+    """실제 경로로도 200 본문을 읽어 판정한다 — 로컬 서버가 테스트 대역이 아닌지 확인하는 대조군."""
+    result = check_robots(robots_server(200, "User-agent: *\nDisallow: /list"))
+    assert result["error"] is None
+    assert result["allowed"] is False
+
+
 # ── P2-2: PII 스키마 감지 ──
 def test_pii_detects_author_column_names():
     warnings = detect_pii([{"작성자": "홍길동", "평점": 5}])
