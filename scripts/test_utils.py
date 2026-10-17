@@ -260,7 +260,7 @@ def test_robots_network_error_is_reported_not_swallowed(monkeypatch):
 
 
 @pytest.fixture
-def robots_server():
+def robots_server(monkeypatch):
     """robots.txt 를 정해진 상태 코드로 돌려주는 로컬 서버 — `_fetch_robots` 를 가짜로 바꾸지 않는다.
 
     위 테스트들은 `_fetch_robots` 를 `(본문, 404)` 를 돌려주는 가짜로 바꿔서, 실제 `urlopen` 이
@@ -268,16 +268,22 @@ def robots_server():
     books.toscrape.com·www.shu.ac.kr 의 404 가 '확인 못 함' 으로 보고됨).
     """
     import threading
+    import urllib.request
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-    reply = {"status": 200, "body": ""}
+    # 프록시 환경변수가 있으면 urlopen 이 로컬 서버 대신 프록시로 간다(2026-10-17 독립 리뷰 [Low]).
+    # 전역 opener 를 프록시 없는 것으로 바꿔 두고 monkeypatch 가 원복한다.
+    monkeypatch.setattr(urllib.request, "_opener",
+                        urllib.request.build_opener(urllib.request.ProxyHandler({})))
+
+    reply = {"status": 200, "body": "", "length_delta": 0}
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             body = reply["body"].encode("utf-8")
             self.send_response(reply["status"])
             self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Content-Length", str(len(body) + reply["length_delta"]))
             self.end_headers()
             self.wfile.write(body)
 
@@ -288,8 +294,8 @@ def robots_server():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    def serve(status, body=""):
-        reply.update(status=status, body=body)
+    def serve(status, body="", length_delta=0):
+        reply.update(status=status, body=body, length_delta=length_delta)
         return f"http://127.0.0.1:{server.server_address[1]}/list"
 
     yield serve
@@ -305,9 +311,22 @@ def test_robots_real_missing_file_allows_without_error(robots_server, status):
     assert result["allowed"] is True
 
 
-@pytest.mark.parametrize("status", [401, 403, 500, 503])
+@pytest.mark.parametrize("status", [404, 410])
+def test_robots_real_missing_file_ignores_broken_error_body(robots_server, status):
+    """파일 없음은 상태 코드로 판정한다 — 오류 본문이 잘려도 '확인 못 함' 으로 되돌아가지 않는다
+    (2026-10-17 독립 리뷰 [Low]: Content-Length 가 1 크면 IncompleteRead 로 error 가 됐다)."""
+    result = check_robots(robots_server(status, "Not Found", length_delta=1))
+    assert result["error"] is None, result["error"]
+    assert result["allowed"] is True
+
+
+@pytest.mark.parametrize("status", [301, 302, 401, 403, 500, 503])
 def test_robots_real_other_errors_stay_unverified(robots_server, status):
-    """403 은 WAF 가 막은 것일 수 있고 5xx 는 서버 장애다 — 허용으로 단정하지 않고 '확인 못 함' 으로 남긴다."""
+    """403 은 WAF 가 막은 것일 수 있고 5xx 는 서버 장애다 — 허용으로 단정하지 않고 '확인 못 함' 으로 남긴다.
+
+    풀리지 않은 3xx(Location 없음) 도 같다. urlopen 은 이것도 HTTPError 로 던지는데, 4xx 만 보던
+    판정이 이를 '제한 없음' 으로 통과시켰다(2026-10-17 독립 리뷰 [Medium], master 에서는 error 였다).
+    """
     result = check_robots(robots_server(status, "nope"))
     assert result["error"] is not None
     assert str(status) in result["error"]

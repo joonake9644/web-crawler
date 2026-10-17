@@ -350,8 +350,9 @@ def plain_dynamic(url: str, **kw):
 def _fetch_robots(url: str, timeout: int = 10):
     """robots.txt 를 가져와 (본문, status) 반환. 테스트에서 monkeypatch 한다.
 
-    `urlopen` 은 4xx·5xx 를 값이 아니라 `HTTPError` 로 던진다. 그대로 두면 404 가
-    '가져오지 못함' 으로 새어 나가 check_robots 의 404 분기에 닿지 못한다(2026-10-17 실측).
+    `urlopen` 은 4xx·5xx 와 풀리지 않은 3xx 를 값이 아니라 `HTTPError` 로 던진다. 그대로 두면
+    404 가 '가져오지 못함' 으로 새어 나가 check_robots 의 404 분기에 닿지 못한다(2026-10-17 실측).
+    판정은 상태 코드로만 하므로 오류 응답의 본문은 읽지 않는다 — 본문이 잘려도 코드는 남는다.
     """
     from urllib.error import HTTPError
     from urllib.request import Request, urlopen
@@ -360,7 +361,8 @@ def _fetch_robots(url: str, timeout: int = 10):
         with urlopen(req, timeout=timeout) as resp:      # noqa: S310 (http/https만 들어온다)
             return resp.read().decode("utf-8", errors="replace"), resp.status
     except HTTPError as exc:
-        return exc.read().decode("utf-8", errors="replace"), exc.code
+        exc.close()
+        return "", exc.code
 
 
 def check_robots(url: str, user_agent: str = "*") -> dict:
@@ -385,8 +387,8 @@ def check_robots(url: str, user_agent: str = "*") -> dict:
 
     if status in (404, 410):
         return result       # 파일 없음 → 제한 없음 (RFC 9309 §2.3.1.3)
-    if status >= 400:
-        # 403 은 WAF 가 막은 것일 수 있고 5xx 는 장애다 — 허용으로 단정하지 않는다
+    if not 200 <= status < 300:
+        # 403 은 WAF 가 막은 것일 수 있고 5xx 는 장애, 3xx 는 풀리지 않은 리다이렉트다 — 허용으로 단정하지 않는다
         result["error"] = f"robots.txt 를 가져오지 못했습니다: HTTP {status}"
         return result
     if not body.strip():
