@@ -71,7 +71,7 @@ def test_version_upper_bound_ignores_environment_markers():
 
 
 def test_playwright_has_upper_bound():
-    """상한은 1.64 가 나왔을 때 patchright 를 두고 독주하는 브레이크다(ADR-002).
+    """상한은 다음 마이너가 한쪽에만 나왔을 때 독주를 막는 브레이크다(ADR-002).
 
     결합 그 자체를 강제하지는 못한다 — 제약식이 같아도 해석된 *패치* 버전은
     달라질 수 있다(patchright 만 1.60.1/1.61.2/1.62.3 같은 추가 패치가 있다).
@@ -80,7 +80,7 @@ def test_playwright_has_upper_bound():
     upper = _version_upper_bound(_constraint("playwright"))
     assert upper is not None, (
         f"playwright 에 버전 상한이 없습니다 (제약식={_constraint('playwright')!r}) — "
-        "1.64 출시에 patchright 를 두고 독주할 수 있습니다. "
+        "다음 마이너 출시에 patchright 를 두고 독주할 수 있습니다. "
         "requirements.txt 의 두 줄에 같은 상한을 두세요"
     )
     assert _version_upper_bound(_constraint("patchright")) == upper, (
@@ -145,6 +145,23 @@ def test_upper_bound_raise_waits_for_both_packages():
         assert sentence in comment, (
             f"상한을 올리는 조건 문장 「{sentence}」 이 주석에 없습니다 (ADR-002)"
         )
+
+
+def test_coupling_comment_states_actual_range():
+    """주석의 '허용 범위 A ~ B.x' 가 실제 제약식과 같다(ADR-002 '주석이 거짓말' 재발 방지).
+
+    상한만 올리고 주석의 범위 문장을 두면 주석이 다시 낡은 사실을 말한다 —
+    ADR-002 가 처음 고친 결함("(둘 다 1.62.x)")이 바로 그 모양이었다.
+    """
+    constraint = _constraint("playwright").split(";", 1)[0]
+    lower = re.search(r">=\s*(\d[\w.]*)", constraint)
+    upper = _version_upper_bound(constraint)
+    assert lower and upper, f"하한·상한을 모두 읽지 못했습니다 (제약식={constraint!r})"
+    major, minor = upper.split(".")[:2]
+    expected = f"허용 범위 {lower.group(1)} ~ {major}.{int(minor) - 1}.x"
+    assert expected in _coupling_comment(), (
+        f"주석의 허용 범위 문장이 제약식({constraint})과 다릅니다 — 「{expected}」 가 있어야 합니다 (ADR-002)"
+    )
 
 
 def test_scrapling_has_upper_bound():
