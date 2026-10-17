@@ -147,20 +147,62 @@ def test_upper_bound_raise_waits_for_both_packages():
         )
 
 
+_RANGE_SPEC = re.compile(r">=\s*(\d+(?:\.\d+)*)\s*,\s*<\s*(\d+)\.([1-9]\d*)")
+
+
+def _allowed_range(constraint: str) -> tuple[str, str] | None:
+    """`>=A,<M.N`(N≥1) 꼴이면 (하한 A, 마지막 허용 마이너 'M.(N-1)'), 그 밖의 꼴은 None.
+
+    다른 꼴을 어림으로 읽지 않는다 — 읽지 못하면 검사가 실패해 사람이 함께 고치게 한다.
+    """
+    match = _RANGE_SPEC.fullmatch(constraint.split(";", 1)[0].strip())
+    if not match:
+        return None
+    lower, major, minor = match.groups()
+    return lower, f"{major}.{int(minor) - 1}"
+
+
+def _release(version: str) -> tuple[int, ...]:
+    """끝의 0 을 뗀 숫자 튜플 — `1.62.0` 과 `1.62` 를 같은 하한으로 본다."""
+    parts = [int(p) for p in version.split(".")]
+    while len(parts) > 1 and parts[-1] == 0:
+        parts.pop()
+    return tuple(parts)
+
+
+def test_allowed_range_reads_only_the_supported_form():
+    """`>=A,<M.N`(N≥1) 꼴만 범위로 읽는다 (2026-10-17 독립 리뷰 [Low] 3건).
+
+    상한이 여럿이거나(`<1.65,<1.64`) 하한이 둘이면 앞부분만 읽어 실제 범위와 다른 주석이
+    통과했고, `<2.0` 은 `2.-1` 을 요구했고, `>=1.62.0` 은 `1.62` 와 같은 하한인데 실패했다.
+    """
+    assert _allowed_range(">=1.62,<1.65") == ("1.62", "1.64")
+    assert _allowed_range('>=1.62,<1.70; python_version<"3.14"') == ("1.62", "1.69")
+    assert _allowed_range(">=1.62.1,<1.65") == ("1.62.1", "1.64")
+    for unsupported in (">=1.62,<2.0", ">=1.62,<1.65,<1.64", ">=1.62,>=1.63,<1.65",
+                        ">=1.62,<1.65.1", ">=1.62", "<1.65"):
+        assert _allowed_range(unsupported) is None, unsupported
+    assert _release("1.62.0") == _release("1.62") != _release("1.62.1")
+
+
 def test_coupling_comment_states_actual_range():
     """주석의 '허용 범위 A ~ B.x' 가 실제 제약식과 같다(ADR-002 '주석이 거짓말' 재발 방지).
 
     상한만 올리고 주석의 범위 문장을 두면 주석이 다시 낡은 사실을 말한다 —
     ADR-002 가 처음 고친 결함("(둘 다 1.62.x)")이 바로 그 모양이었다.
     """
-    constraint = _constraint("playwright").split(";", 1)[0]
-    lower = re.search(r">=\s*(\d[\w.]*)", constraint)
-    upper = _version_upper_bound(constraint)
-    assert lower and upper, f"하한·상한을 모두 읽지 못했습니다 (제약식={constraint!r})"
-    major, minor = upper.split(".")[:2]
-    expected = f"허용 범위 {lower.group(1)} ~ {major}.{int(minor) - 1}.x"
-    assert expected in _coupling_comment(), (
-        f"주석의 허용 범위 문장이 제약식({constraint})과 다릅니다 — 「{expected}」 가 있어야 합니다 (ADR-002)"
+    constraint = _constraint("playwright")
+    allowed = _allowed_range(constraint)
+    assert allowed, (
+        f"제약식 {constraint!r} 은 이 검사가 읽는 `>=A,<M.N`(N≥1) 꼴이 아닙니다 — "
+        "꼴을 바꿨다면 이 검사도 함께 고치세요 (ADR-002)"
+    )
+    stated = re.search(r"허용 범위 (\d+(?:\.\d+)*) ~ (\d+\.\d+)\.x", _coupling_comment())
+    assert stated, "주석에 「허용 범위 A ~ B.x」 문장이 없습니다 (ADR-002)"
+    lower, last_minor = allowed
+    assert (_release(stated.group(1)), stated.group(2)) == (_release(lower), last_minor), (
+        f"주석의 허용 범위 「{stated.group(0)}」 가 제약식({constraint})과 다릅니다 — "
+        f"「허용 범위 {lower} ~ {last_minor}.x」 여야 합니다 (ADR-002)"
     )
 
 
