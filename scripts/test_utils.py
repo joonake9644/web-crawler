@@ -259,6 +259,86 @@ def test_robots_network_error_is_reported_not_swallowed(monkeypatch):
     assert result["allowed"] is True     # 차단 근거가 없으므로 막지는 않는다
 
 
+@pytest.fixture
+def robots_server(monkeypatch):
+    """robots.txt 를 정해진 상태 코드로 돌려주는 로컬 서버 — `_fetch_robots` 를 가짜로 바꾸지 않는다.
+
+    위 테스트들은 `_fetch_robots` 를 `(본문, 404)` 를 돌려주는 가짜로 바꿔서, 실제 `urlopen` 이
+    404 에서 값이 아니라 `HTTPError` 를 던진다는 사실을 한 번도 지나가지 않았다(2026-10-17 실측:
+    books.toscrape.com·www.shu.ac.kr 의 404 가 '확인 못 함' 으로 보고됨).
+    """
+    import threading
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    # 프록시 환경변수가 있으면 urlopen 이 로컬 서버 대신 프록시로 간다(2026-10-17 독립 리뷰 [Low]).
+    # 전역 opener 를 프록시 없는 것으로 바꿔 두고 monkeypatch 가 원복한다.
+    monkeypatch.setattr(urllib.request, "_opener",
+                        urllib.request.build_opener(urllib.request.ProxyHandler({})))
+
+    reply = {"status": 200, "body": "", "length_delta": 0}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = reply["body"].encode("utf-8")
+            self.send_response(reply["status"])
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body) + reply["length_delta"]))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def serve(status, body="", length_delta=0):
+        reply.update(status=status, body=body, length_delta=length_delta)
+        return f"http://127.0.0.1:{server.server_address[1]}/list"
+
+    yield serve
+    server.shutdown()
+    server.server_close()
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_robots_real_missing_file_allows_without_error(robots_server, status):
+    """파일이 없다(404·410)는 응답은 '제한 없음' 이다 — '확인 못 함' 이 아니다 (RFC 9309 §2.3.1.3)."""
+    result = check_robots(robots_server(status, "Not Found"))
+    assert result["error"] is None, result["error"]
+    assert result["allowed"] is True
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_robots_real_missing_file_ignores_broken_error_body(robots_server, status):
+    """파일 없음은 상태 코드로 판정한다 — 오류 본문이 잘려도 '확인 못 함' 으로 되돌아가지 않는다
+    (2026-10-17 독립 리뷰 [Low]: Content-Length 가 1 크면 IncompleteRead 로 error 가 됐다)."""
+    result = check_robots(robots_server(status, "Not Found", length_delta=1))
+    assert result["error"] is None, result["error"]
+    assert result["allowed"] is True
+
+
+@pytest.mark.parametrize("status", [301, 302, 401, 403, 500, 503])
+def test_robots_real_other_errors_stay_unverified(robots_server, status):
+    """403 은 WAF 가 막은 것일 수 있고 5xx 는 서버 장애다 — 허용으로 단정하지 않고 '확인 못 함' 으로 남긴다.
+
+    풀리지 않은 3xx(Location 없음) 도 같다. urlopen 은 이것도 HTTPError 로 던지는데, 4xx 만 보던
+    판정이 이를 '제한 없음' 으로 통과시켰다(2026-10-17 독립 리뷰 [Medium], master 에서는 error 였다).
+    """
+    result = check_robots(robots_server(status, "nope"))
+    assert result["error"] is not None
+    assert str(status) in result["error"]
+
+
+def test_robots_real_disallow_is_enforced(robots_server):
+    """실제 경로로도 200 본문을 읽어 판정한다 — 로컬 서버가 테스트 대역이 아닌지 확인하는 대조군."""
+    result = check_robots(robots_server(200, "User-agent: *\nDisallow: /list"))
+    assert result["error"] is None
+    assert result["allowed"] is False
+
+
 # ── P2-2: PII 스키마 감지 ──
 def test_pii_detects_author_column_names():
     warnings = detect_pii([{"작성자": "홍길동", "평점": 5}])
