@@ -212,3 +212,84 @@ def test_documented_enum_value_is_known_to_classifier(doc, field, value):
         f"{doc}: {field} 목록의 `{value}` 가 profile_policy.TOOLS 에 없다. "
         f"문서를 따라 적으면 save() 가 거부한다 — 목록에서 빼거나 TOOLS 에 등록하라"
     )
+
+
+# ── 5) 셀렉터 자가치유 블록이 설치된 Scrapling 의 시그니처와 맞는가 (SEC-001-F4) ──
+# 2026-10-31 자가 점검 실측: 문서가 시키던 `page.css(..., storage_args={...})` 는
+# scrapling 0.4.15 에서 `TypeError: Selector.css() got an unexpected keyword argument
+# 'storage_args'` 로 죽는다. `storage_args`·`adaptive` 는 **생성자/Fetcher.configure** 인자다.
+# import 는 멀쩡하고 런타임에만 죽어서 1) 검사가 못 잡았다. 그래서 호출 kwargs 를 따로 본다.
+# scripts/scrapling_reference.md 는 DOC_FILES 밖이지만 같은 블록을 복제해 둔 참조라 함께 본다.
+
+SELECTOR_DOC_FILES = DOC_FILES + [REPO / "scripts/scrapling_reference.md"]
+_SELECTOR_CALL = re.compile(r"\.(css|xpath)\(")
+_TOP_KWARG = re.compile(r"(?<![=!<>\w])([A-Za-z_]\w*)\s*=(?!=)")
+
+
+def _selector_call_kwargs():
+    """(문서, 메서드, kwarg) — `.css(` / `.xpath(` 호출의 최상위 키워드 인자."""
+    out = set()
+    for path in SELECTOR_DOC_FILES:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for block in _PY_BLOCK.findall(text):
+            code = _strip_comments(block)
+            for m in _SELECTOR_CALL.finditer(code):
+                depth, i, top = 1, m.end(), []
+                while i < len(code) and depth:
+                    ch = code[i]
+                    if ch in "([{":
+                        depth += 1
+                    elif ch in ")]}":
+                        depth -= 1
+                    if depth == 1 or (depth == 0 and ch == ")"):
+                        top.append(ch if depth == 1 else "")
+                    else:
+                        top.append(" ")
+                    i += 1
+                for name in _TOP_KWARG.findall("".join(top)):
+                    out.add((path.relative_to(REPO).as_posix(), m.group(1), name))
+    return sorted(out)
+
+
+SELECTOR_KWARGS = _selector_call_kwargs()
+
+
+def test_selector_kwarg_collection_is_not_empty():
+    assert SELECTOR_KWARGS, "문서에서 .css()/.xpath() 키워드 인자를 못 찾았다 — 수집기가 깨졌다"
+
+
+@pytest.mark.parametrize("doc,method,kwarg", SELECTOR_KWARGS,
+                         ids=[f"{d}:{m}({k}=)" for d, m, k in SELECTOR_KWARGS])
+def test_documented_selector_kwargs_exist(doc, method, kwarg):
+    import inspect
+    from scrapling.parser import Selector
+
+    params = inspect.signature(getattr(Selector, method)).parameters
+    assert kwarg in params, (
+        f"{doc}: `.{method}(..., {kwarg}=...)` — 설치된 Scrapling 의 Selector.{method} 에 "
+        f"`{kwarg}` 인자가 없다(문서대로 하면 TypeError). 허용: {sorted(params)[1:]}"
+    )
+
+
+def test_documented_self_heal_flow_actually_relocates(tmp_path):
+    """문서의 자가치유 흐름(생성자 adaptive+storage_args → auto_save → adaptive)이 실제로 복구한다.
+
+    옛 e2e 는 저장 단계에서 adaptive 를 켜지 않아 핑거프린트가 저장되지 않았고, 그래서
+    변경 후 0건인데도 '로깅만' 하고 PASS 였다. 여기서는 복구 건수를 단언한다.
+    """
+    from scrapling.parser import Selector
+
+    storage = {"storage_file": str(tmp_path / "elements_storage.db")}
+    v1 = ("<html><body><div class='list'><div class='item'><h2 class='title'>상품A</h2>"
+          "<span>₩1</span></div></div></body></html>")
+    v2 = v1.replace("'title'", "'product-title'")
+
+    first = Selector(v1, url="https://self-heal.test", adaptive=True, storage_args=storage)
+    assert len(first.css("div.item h2.title", auto_save=True)) == 1
+
+    later = Selector(v2, url="https://self-heal.test", adaptive=True, storage_args=storage)
+    assert len(later.css("div.item h2.title")) == 0   # 셀렉터는 실제로 깨졌다
+    healed = later.css("div.item h2.title", adaptive=True)
+    assert [el.text for el in healed] == ["상품A"], healed
