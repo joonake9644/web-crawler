@@ -399,14 +399,21 @@ output/<도메인>/<주제_YYYYMMDD_HHMMSS>/
 
 ### 셀렉터 자가 치유
 
-```python
-# 첫 수집: 핑거프린트 저장
-items = page.css("<SELECTOR>", auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+`adaptive`·`storage_args` 는 **`css()` 인자가 아니라 파서 설정**이다. `css(..., storage_args=…)` 는
+`TypeError` 로 죽고, 파서에서 `adaptive` 를 켜지 않은 채 `auto_save=True` 를 주면 경고만 남기고
+**저장하지 않는다**(scrapling 0.4.15 실측, SEC-001-F4). Fetcher 클래스에 먼저 설정한다.
 
-# 이후: 자가 치유
-items = page.css("<SELECTOR>", adaptive=True, auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+```python
+from scrapling.fetchers import Fetcher   # StealthyFetcher / DynamicFetcher 도 같은 configure 를 쓴다
+
+Fetcher.configure(adaptive=True,
+                  storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+
+# 첫 수집: 핑거프린트 저장
+items = page.css("<SELECTOR>", auto_save=True)
+
+# 이후: 셀렉터가 깨졌을 때 자가 치유 (핑거프린트로 재탐색)
+items = page.css("<SELECTOR>", adaptive=True)
 ```
 
 ---

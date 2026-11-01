@@ -94,6 +94,7 @@ python scripts/session_handoff.py --check
 - **자동 접근 차단(CAPTCHA·WAF·봇 탐지)을 만나면 자동으로 넘어가지 않고 한 번 알리고 사용자가 고른다.** '진행' 이면 근거를 묻지 않고 그대로 간다.
 - CAPTCHA 자동 풀이 금지 / 로그인 자격증명 저장 금지 / robots.txt 제한 시 사용자 확인 / PII 감지 시 경고 / 법적 위험이 큰 요청은 어느 축인지 짚어 경고.
 - 상세: `docs/crawl-reference.md` "범위 / 운영 안전 규칙", `AGENTS.md` "안전 — 하드룰", `SKILL.md` Step 3 "이음매 통지 게이트".
+- **자가 보안 점검(방어 목적 모의 침투)**: `docs/security/` — 범위 `SCOPE.md`, 지시문 `AUTHORIZATION.md`, 루프 `engagement-loop.md`, 스킬 `.claude/skills/authorized-defensive-security/`. 찾기 → 고치기 → 회귀 테스트로만 닫는다.
 
 ## 계획 연속성
 

@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "active_work_id": "PY311-001",
-  "stage": "POST_CHECK",
-  "dirty": false,
+  "stage": "VERIFY",
+  "dirty": true,
   "verified_commit": "4b9c8d1",
   "session_end": {
     "independent_review": {

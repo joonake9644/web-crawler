@@ -237,13 +237,15 @@ adaptor = Adaptor(html, url="https://example.com")
 # CSS 셀렉터
 items = adaptor.css("div.item h2")
 
+# auto_save / adaptive 를 쓰려면 생성자에서 adaptive·storage_args 를 켠다 (css() 인자가 아니다)
+adaptor = Adaptor(html, url="https://example.com", adaptive=True,
+                  storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+
 # auto_save: 셀렉터 핑거프린트 저장
-items = adaptor.css("div.item", auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+items = adaptor.css("div.item", auto_save=True)
 
 # adaptive: 셀렉터 변경 시 자동 복구
-items = adaptor.css("div.item", adaptive=True, auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+items = adaptor.css("div.item", adaptive=True)
 ```
 
 ---
@@ -253,15 +255,17 @@ items = adaptor.css("div.item", adaptive=True, auto_save=True,
 Scrapling의 핵심 기능. 셀렉터가 변경되어도 핑거프린트 기반으로 자동 복구.
 
 ```python
+# adaptive·storage_args 는 파서 설정이다 — Fetcher 클래스에 먼저 건다 (SEC-001-F4 실측)
+Fetcher.configure(adaptive=True,
+                  storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+
 # 첫 수집: 핑거프린트 저장
-page = fetcher.get(url)
-items = page.css("<SELECTOR>", auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+page = Fetcher.get(url)
+items = page.css("<SELECTOR>", auto_save=True)
 
 # 이후 수집: 자가 치유
-page = fetcher.get(url)
-items = page.css("<SELECTOR>", adaptive=True, auto_save=True,
-    storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+page = Fetcher.get(url)
+items = page.css("<SELECTOR>", adaptive=True)
 ```
 
 핑거프린트 저장 경로: `./fingerprints/elements_storage.db`

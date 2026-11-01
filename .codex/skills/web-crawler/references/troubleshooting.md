@@ -150,7 +150,7 @@ def validate_record(record):
 
 ### 해결책 (autoresearch exp-1에서 발견)
 - CSS 클래스 대신 **구조적 셀렉터** 사용: `div > ul > li`, `[data-testid]`, `[aria-label]`
-- Scrapling의 **adaptive 모드** 활용: `page.css(selector, adaptive=True, auto_save=True)`
+- Scrapling의 **adaptive 모드** 활용: 먼저 `Fetcher.configure(adaptive=True, storage_args={...})` 로 파서에서 켠 뒤 `page.css(selector, auto_save=True)` 로 저장, 깨지면 `page.css(selector, adaptive=True)` (SKILL.md "셀렉터 자가 치유")
 - 별점 등 시각적 데이터는 `aria-label` 속성에서 추출
 
 ---

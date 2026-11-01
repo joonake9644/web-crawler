@@ -81,6 +81,10 @@ docs/plan-approvals/*
 docs/task-contracts/*
 !docs/task-contracts/HARNESS-001.md
 !docs/task-contracts/PY311-001.md
+!docs/task-contracts/SEC-001.md
+# 방어 보안 자산 — AUTHORIZATION·SCOPE·루프·인텔 브리프(2026-10-31 SEC-001).
+# CLAUDE.md 와 .claude/skills/authorized-defensive-security 가 링크한다. 무시되면 clean clone 에서 끊긴다.
+!docs/security/
 # 하네스가 세션 종료 시 생성하는 핸드오프 (읽는 사람이 있으므로 커밋한다)
 !docs/session-handoff.md
 

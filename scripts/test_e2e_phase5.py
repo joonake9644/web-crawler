@@ -34,9 +34,10 @@ def test_e2e_selector_self_healing(tmp_path):
     </body></html>
     """
 
-    adaptor_v1 = Adaptor(html_v1, url="https://test-healing.com", auto_save=True,
+    # adaptive 는 생성자에서 켠다 — 생성자의 auto_save 는 **조용히 무시되는** 인자였다(SEC-001-F4).
+    adaptor_v1 = Adaptor(html_v1, url="https://test-healing.com", adaptive=True,
                           storage_args={"storage_file": db_path})
-    items_v1 = adaptor_v1.css("div.item h2.title")
+    items_v1 = adaptor_v1.css("div.item h2.title", auto_save=True)
     assert len(items_v1) == 3, f"Expected 3 items, got {len(items_v1)}"
     logger.info(f"V1: Found {len(items_v1)} items with original selector")
 
@@ -52,14 +53,15 @@ def test_e2e_selector_self_healing(tmp_path):
     """
 
     # adaptive=True로 자가 치유 시도 — Adaptor 생성자에서 설정
-    adaptor_v2 = Adaptor(html_v2, url="https://test-healing.com",
-                          auto_save=True, adaptive=True,
+    adaptor_v2 = Adaptor(html_v2, url="https://test-healing.com", adaptive=True,
                           storage_args={"storage_file": db_path})
-    items_v2 = adaptor_v2.css("div.item h2.title")
+    assert len(adaptor_v2.css("div.item h2.title")) == 0, "셀렉터가 실제로 깨져야 복구를 잰다"
+    items_v2 = adaptor_v2.css("div.item h2.title", adaptive=True)
 
-    # adaptive가 핑거프린트 기반으로 복구했거나, 구조 기반 매칭으로 찾을 수 있음
-    # Scrapling adaptive의 동작은 보장되지 않으므로 로깅만 수행
+    # 옛 버전은 여기서 '로깅만' 하고 0건이어도 PASS 였다. 복구를 단언한다.
+    # scrapling 0.4.15 는 auto_save 시 첫 요소의 핑거프린트를 저장하므로 최소 1건을 본다.
     logger.info(f"V2 (adaptive): Found {len(items_v2)} items after selector change")
+    assert len(items_v2) >= 1 and items_v2[0].text == "상품A", f"자가치유 실패: {items_v2}"
 
     # 핑거프린트 DB가 생성되었는지 확인
     assert os.path.exists(db_path), "Fingerprint DB not created"

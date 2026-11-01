@@ -75,10 +75,28 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r'[^\w\-]', '_', name)
 
 
-def save_cookies(cookies: dict, filepath: str):
-    """쿠키를 JSON 파일로 저장."""
+_SECRET_FILE_MODE = 0o600
+
+
+def _open_secret_file(filepath: str):
+    """소유자만 읽고 쓰는 파일로 연다 — 쿠키·토큰은 로그인 그 자체다 (SEC-001-F3).
+
+    기본 `open(..., "w")` 는 umask 를 따라 대개 0644 가 된다. 같은 기기의 다른 계정·
+    프로세스가 세션 쿠키를 읽으면 비밀번호 없이 그 사람으로 로그인할 수 있다.
+    생성 모드(`os.open` 의 0o600)는 **새 파일**에만 적용되므로, 이미 0644 로 있던 파일을
+    덮어쓰는 경로를 위해 쓰기 전에 `chmod` 로 한 번 더 좁힌다. Windows 는 POSIX 권한 비트가
+    없어 chmod 가 읽기전용 플래그만 바꾸므로 그쪽은 사용자 프로필 ACL 에 맡긴다.
+    """
     os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
+    fd = os.open(filepath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, _SECRET_FILE_MODE)
+    if os.name != "nt":
+        os.chmod(filepath, _SECRET_FILE_MODE)
+    return os.fdopen(fd, "w", encoding="utf-8")
+
+
+def save_cookies(cookies: dict, filepath: str):
+    """쿠키를 JSON 파일로 저장 (권한 0600)."""
+    with _open_secret_file(filepath) as f:
         json.dump(cookies, f, ensure_ascii=False, indent=2)
 
 
@@ -94,9 +112,8 @@ def load_cookies(filepath: str, max_age_hours: int = 24) -> dict | None:
 
 
 def save_auth_token(token: str, filepath: str, token_type: str = "bearer"):
-    """인증 토큰을 JSON 파일로 저장."""
-    os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
+    """인증 토큰을 JSON 파일로 저장 (권한 0600)."""
+    with _open_secret_file(filepath) as f:
         json.dump({"type": token_type, "token": token}, f)
 
 
@@ -134,6 +151,37 @@ _PHONE_PATTERN = re.compile(
     r')(?!\d)'
 )
 
+# 국제 표기 전화번호 (SEC-001-F2) — 외국인 연락처는 `+국가번호` 로 온다. 위 패턴은
+# `+82 2 123 4567`(지역번호 1자리)·`+14155552671`(붙여 쓰기)·`+1 (415) 555-2671` 을 놓쳤다.
+#
+# F11 규율을 그대로 지킨다 — 넓게 잡고 끝내지 않는다:
+#   1) 반드시 `+` 로 시작하고, `+` 앞이 글자·숫자가 아니어야 한다(`q=a+1415…` 같은 URL 쿼리 제외).
+#   2) 숫자 개수가 E.164 범위(8~15자리)여야 한다 — `_intl_phone_hit` 가 센다.
+#      19자리 instagram pk 에 `+` 가 붙어도 15 를 넘으므로 걸리지 않는다.
+#   3) 뒤에 숫자·`:` 가 이어지면 제외한다 — `+09:00` 같은 시간대 오프셋.
+_INTL_PHONE_PATTERN = re.compile(
+    r'(?<![\w+])\+\d{1,3}(?:[-.\s]?\(?\d{1,4}\)?){1,5}(?![\d:])'
+)
+_E164_MIN_DIGITS, _E164_MAX_DIGITS = 8, 15
+
+
+def _intl_phone_hit(value: str) -> bool:
+    for match in _INTL_PHONE_PATTERN.finditer(value):
+        digits = sum(ch.isdigit() for ch in match.group(0))
+        if _E164_MIN_DIGITS <= digits <= _E164_MAX_DIGITS:
+            return True
+    return False
+
+
+# 주민등록번호·외국인등록번호 (SEC-001-F2) — 두 번호는 같은 13자리 형식이다(뒤 첫 자리가
+# 내국인 1~4, 외국인 5~8). AGENTS.md 는 주민번호를 PII 로 적었지만 값 패턴이 없었다.
+# 오탐을 줄이려고 **하이픈을 필수**로 두고 앞 6자리가 실제 날짜(월 01~12, 일 01~31)인지,
+# 성별 자리가 1~8 인지까지 본다. 하이픈 없는 13자리는 주문번호·ID 와 구분할 수 없어 잡지 않는다
+# — 그 경우는 컬럼명 힌트(`주민번호`·`외국인등록`)가 맡는다.
+_REGISTRATION_NO_PATTERN = re.compile(
+    r'(?<![\d-])\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])-[1-8]\d{6}(?![\d-])'
+)
+
 # 개인을 가리키는 컬럼명. 값이 아니라 '스키마' 를 보는 게 이 경우 더 정확하다 —
 # "홍길동" 이라는 값만 봐서는 사람 이름인지 상품명인지 알 수 없지만, 컬럼명이 '작성자' 면 확실하다.
 #
@@ -149,7 +197,15 @@ _PII_COLUMN_HINTS = (
     "수신자", "담당자", "인수자", "접수자", "낙찰자",
     "author", "writer", "nickname", "username", "user_name", "userid", "user_id", "user_num",
     "reviewer", "member", "buyer", "customer", "profile",
+    # SEC-001-F2 — 신분증·외국인 식별 번호. 값 정규식보다 컬럼명이 오탐이 적다.
+    "여권", "passport", "외국인등록", "alien_reg", "주민등록", "주민번호",
+    "national_id", "생년월일", "date_of_birth", "birthdate",
 )
+
+# 부분 문자열로 보면 오탐이 나는 짧은 약어 — `ssn` 은 `classname`·`lessons` 안에 있다.
+# 컬럼명을 `_`·`-`·공백·`.` 으로 자른 **토큰이 정확히 같을 때만** 본다. 리터럴만 둔다.
+_PII_COLUMN_TOKENS = ("ssn", "rrn", "dob")
+_COLUMN_TOKEN_SPLIT = re.compile(r'[_\-\s.]+')
 
 # 집계·파생 컬럼은 사람이 아니라 사람에 대한 '수치' 다.
 # `작성자` 는 개인이지만 `작성자수` 는 개인이 아니다 — 어근이 같아도 다른 것이다.
@@ -170,39 +226,55 @@ _PII_AGGREGATE_SUFFIXES = (
 
 
 def detect_pii(data: list[dict]) -> list[str]:
-    """수집 데이터에서 PII(개인식별정보)를 감지 — 값 패턴과 컬럼명 양쪽을 본다."""
+    """수집 데이터에서 PII(개인식별정보)를 감지 — 값 패턴과 컬럼명 양쪽을 본다.
+
+    **전 행을 본다** (SEC-001-F1). 예전에는 앞 50행만 봐서, 51행부터 섞인 개인정보는
+    경고 없이 엑셀로 나갔다 — 정렬 순서만 바꿔도 피해 가는 검사는 검사가 아니다.
+    대신 값 경고는 (종류, 필드)당 한 줄로 모은다: 처음 나온 행과 총 건수. 행마다 한 줄씩
+    쏟아지면 사람은 경고 자체를 무시하게 된다(F11 과 같은 이유).
+    """
     warnings = []
     if not data:
         return warnings
 
-    # 1) 스키마 — 데이터셋당 한 번. 컬럼명이 개인을 가리키는지.
-    columns = {key for item in data[:50] if isinstance(item, dict) for key in item}
-    for column in sorted(columns):
+    rows = [item for item in data if isinstance(item, dict)]
+
+    # 1) 스키마 — 데이터셋당 한 번. 컬럼명이 개인을 가리키는지. 전 행의 컬럼 합집합.
+    columns = {key for item in rows for key in item}
+    for column in sorted(columns, key=str):
         lowered = str(column).lower()
         # 집계·파생 접미사로 끝나면 사람이 아니라 사람에 대한 수치다 — 건너뛴다.
         # endswith 여야 한다. substring 검사면 '수신자' 처럼 접미사 글자로 '시작'하는
         # 진짜 개인 컬럼까지 잘못 걸러낸다.
         if lowered.endswith(_PII_AGGREGATE_SUFFIXES):
             continue
-        for hint in _PII_COLUMN_HINTS:
-            if hint in lowered:
-                warnings.append(
-                    f"개인식별 컬럼 감지: '{column}' — 개인정보보호법은 영리 여부를 묻지 않는다. "
-                    "수집·보관 근거를 확인하고, 필요 없으면 이 필드를 빼는 것을 권한다"
-                )
-                break
+        tokens = set(_COLUMN_TOKEN_SPLIT.split(lowered))
+        if any(hint in lowered for hint in _PII_COLUMN_HINTS) or tokens & set(_PII_COLUMN_TOKENS):
+            warnings.append(
+                f"개인식별 컬럼 감지: '{column}' — 개인정보보호법은 영리 여부를 묻지 않는다. "
+                "수집·보관 근거를 확인하고, 필요 없으면 이 필드를 빼는 것을 권한다"
+            )
 
-    # 2) 값 — 처음 50건에서 이메일·전화 패턴
-    for i, item in enumerate(data[:50]):
+    # 2) 값 — 전 행에서 이메일·전화(국내·국제)·주민/외국인등록번호 패턴
+    checks = (
+        ("이메일 패턴 감지", _EMAIL_PATTERN.search),
+        ("전화번호 패턴 감지", lambda v: _PHONE_PATTERN.search(v) or _intl_phone_hit(v)),
+        ("주민·외국인등록번호 패턴 감지", _REGISTRATION_NO_PATTERN.search),
+    )
+    hits: dict[tuple[str, str], list[int]] = {}   # (라벨, 필드) → [처음 행, 건수]
+    for i, item in enumerate(data):
         if not isinstance(item, dict):
             continue
         for field, value in item.items():
             if not isinstance(value, str):
                 continue
-            if _EMAIL_PATTERN.search(value):
-                warnings.append(f"이메일 패턴 감지: 필드 '{field}' (row {i+1})")
-            if _PHONE_PATTERN.search(value):
-                warnings.append(f"전화번호 패턴 감지: 필드 '{field}' (row {i+1})")
+            for label, found in checks:
+                if found(value):
+                    slot = hits.setdefault((label, field), [i + 1, 0])
+                    slot[1] += 1
+    for (label, field), (first_row, count) in hits.items():
+        extra = f" 외 {count - 1}건, 총 {count}건" if count > 1 else ""
+        warnings.append(f"{label}: 필드 '{field}' (row {first_row}{extra})")
 
     return warnings
 

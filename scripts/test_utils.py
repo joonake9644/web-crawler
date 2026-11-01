@@ -690,3 +690,125 @@ def test_phone_pattern_flags_bare_mobile_number(value):
     """구분자 없는 11자리 휴대폰은 형식이 명확하므로 잡는다."""
     warnings = detect_pii([{"메모": value}])
     assert any("전화번호" in w for w in warnings), f"놓침: {value!r}"
+
+
+# ── SEC-001: 자가 침투 점검에서 나온 결함 (docs/security/engagement-loop.md) ──
+# 공격자 관점: "51번째 행부터 개인정보를 넣으면 경고가 안 뜬다", "쿠키 파일을 같은 기기의
+# 다른 계정이 읽는다", "외국 번호·외국인등록번호는 패턴이 없다". 셋 다 내 코드의 결함이다.
+
+def test_pii_value_scan_covers_rows_after_50():
+    """SEC-001-F1 — 값 검사가 앞 50행만 보면 51행 이후의 PII 는 경고 없이 엑셀로 나간다."""
+    data = [{"메모": f"상품 {i}"} for i in range(200)]
+    data[120]["메모"] = "문의 hong@example.com"
+    data[199]["메모"] = "연락처 010-1234-5678"
+    warnings = detect_pii(data)
+    assert any("이메일" in w and "row 121" in w for w in warnings), warnings
+    assert any("전화번호" in w and "row 200" in w for w in warnings), warnings
+
+
+def test_pii_schema_scan_covers_columns_first_seen_after_50():
+    """SEC-001-F1 — 스키마도 같다. 51행부터 생기는 '작성자' 컬럼을 놓치면 안 된다."""
+    data = [{"상품명": f"p{i}"} for i in range(80)]
+    data[79]["작성자"] = "홍길동"
+    assert any("작성자" in w for w in detect_pii(data))
+
+
+def test_pii_value_warnings_are_aggregated_per_field():
+    """전수 검사로 바꾸면서 경고가 행마다 쏟아지면 사람은 경고를 무시한다 — 필드당 1줄."""
+    data = [{"contact": f"user{i}@example.com"} for i in range(1000)]
+    email_warnings = [w for w in detect_pii(data) if "이메일" in w]
+    assert len(email_warnings) == 1, email_warnings
+    assert "row 1" in email_warnings[0] and "1000" in email_warnings[0]
+
+
+@pytest.mark.parametrize("value", [
+    "+14155552671",            # E.164 붙여 쓰기
+    "+1 (415) 555-2671",       # 미국 표기
+    "+82 2 123 4567",          # 한국 지역번호(국제 표기) — 기존 패턴이 못 잡음
+    "+81-3-1234-5678",         # 일본
+    "Tel: +44 7911 123456",    # 영국 휴대폰
+])
+def test_pii_flags_international_phone_numbers(value):
+    """SEC-001-F2 — 외국인 연락처(국제 표기)를 놓치던 구멍."""
+    warnings = detect_pii([{"메모": value}])
+    assert any("전화번호" in w for w in warnings), f"놓침: {value!r}"
+
+
+@pytest.mark.parametrize("value", [
+    "C++ 17",                          # 숫자가 짧다
+    "score +12345",                    # 8자리 미만
+    "q=a+14155552671",                 # 앞이 글자 — URL 쿼리 속 숫자
+    "+3967600242987725422",            # 15자리 초과 — E.164 범위 밖(ID)
+    "2026-10-31T22:00:00+09:00",       # 시간대 오프셋
+    "+1.5%",
+])
+def test_pii_international_phone_does_not_flag_non_numbers(value):
+    """국제 번호를 넓히면서 F11(ID·URL 오탐) 규율을 깨면 안 된다."""
+    warnings = detect_pii([{"참조": value}])
+    assert not any("전화번호" in w for w in warnings), f"오탐: {value!r} → {warnings}"
+
+
+@pytest.mark.parametrize("value", [
+    "900101-1234567",          # 주민등록번호 형식
+    "등록번호 850615-5123456",  # 외국인등록번호(성별 자리 5~8)
+])
+def test_pii_flags_resident_or_alien_registration_numbers(value):
+    """SEC-001-F2 — AGENTS.md 는 주민번호를 PII 로 적었는데 값 패턴이 없었다."""
+    warnings = detect_pii([{"메모": value}])
+    assert any("등록번호" in w for w in warnings), f"놓침: {value!r} → {warnings}"
+
+
+@pytest.mark.parametrize("value", [
+    "20261031-1234567",        # 주문번호(앞 8자리)
+    "901301-1234567",          # 13월 — 날짜가 아니다
+    "900101-9234567",          # 성별 자리 9
+    "900101-12345678",         # 뒤가 8자리
+])
+def test_pii_registration_number_does_not_flag_lookalikes(value):
+    warnings = detect_pii([{"참조": value}])
+    assert not any("등록번호" in w for w in warnings), f"오탐: {value!r} → {warnings}"
+
+
+@pytest.mark.parametrize("column", [
+    "passport_no", "passport_number", "여권번호", "외국인등록번호", "alien_reg_no",
+    "alien_registration", "주민등록번호", "주민번호", "national_id", "생년월일",
+    "date_of_birth", "ssn", "applicant_ssn", "rrn",
+])
+def test_pii_flags_foreign_identity_document_columns(column):
+    """SEC-001-F2 — 여권·외국인등록·주민번호 컬럼. 값 정규식보다 컬럼명이 오탐이 적다."""
+    warnings = detect_pii([{column: "x"}])
+    assert warnings, f"신분증 컬럼 '{column}' 을 감지하지 못했습니다"
+
+
+@pytest.mark.parametrize("column", [
+    "classname", "lessons", "passport_count", "current_url", "birth_rate",
+])
+def test_pii_identity_document_hints_do_not_overmatch(column):
+    """`ssn`/`rrn` 은 부분 문자열로 보면 classname·lessons 에 걸린다 — 토큰 일치만."""
+    assert detect_pii([{column: "x"}]) == [], column
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX 권한 비트 검사")
+def test_save_cookies_file_is_owner_only(tmp_path):
+    """SEC-001-F3 — 세션 쿠키는 로그인과 같다. 0644 로 두면 같은 기기의 다른 계정이 읽는다."""
+    filepath = tmp_path / "cookies.json"
+    save_cookies({"session": "abc"}, str(filepath))
+    assert os.stat(filepath).st_mode & 0o077 == 0, oct(os.stat(filepath).st_mode)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX 권한 비트 검사")
+def test_save_auth_token_file_is_owner_only(tmp_path):
+    filepath = tmp_path / "token.json"
+    save_auth_token("secret", str(filepath))
+    assert os.stat(filepath).st_mode & 0o077 == 0, oct(os.stat(filepath).st_mode)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX 권한 비트 검사")
+def test_save_cookies_tightens_existing_world_readable_file(tmp_path):
+    """이미 0644 로 만들어진 파일을 덮어쓸 때도 권한을 좁힌다 — 생성 모드만으로는 안 된다."""
+    filepath = tmp_path / "cookies.json"
+    filepath.write_text("{}")
+    os.chmod(filepath, 0o644)
+    save_cookies({"session": "abc"}, str(filepath))
+    assert os.stat(filepath).st_mode & 0o077 == 0
+    assert load_cookies(str(filepath)) == {"session": "abc"}

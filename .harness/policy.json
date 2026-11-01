@@ -12,9 +12,15 @@
   },
   "return_to": "PY311-001",
   "interrupt": {
-    "status": "none",
+    "status": "active",
+    "id": "SEC-001",
+    "contract_path": "docs/task-contracts/SEC-001.md",
     "return_to": "PY311-001",
-    "exit_criteria": []
+    "exit_criteria": [
+      "SEC-001 테스트 전부 통과 + 계약 명령 6종 exit 0",
+      "PR 리뷰·병합은 소유자 결정",
+      "독립 다른-모델 리뷰 통과 후 interrupt 를 none 으로 되돌림"
+    ]
   },
   "plan_approval": {
     "id": "PY311-001-APPROVAL",
