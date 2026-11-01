@@ -2,7 +2,7 @@
 
 > 이 문서는 **AI 코딩 도구(Claude Code·Codex·Cursor 등)에게 주는 작업 지시문**이다.
 > 범위는 [`SCOPE.md`](SCOPE.md), 절차는 [`engagement-loop.md`](engagement-loop.md) 에 있다.
-> 다른 프로젝트로 옮길 때는 이 파일은 그대로 두고 `SCOPE.md` 만 그 프로젝트에 맞게 다시 쓴다.
+> 전역 지휘 스킬 `security-program`의 web-crawler 저장소 진입점이다. 다른 프로젝트에서는 이 파일을 복사하지 말고 전역 `security-program`을 쓰고, 그 프로젝트의 `SCOPE.md`만 새로 쓴다(단일 원본).
 
 ## 1. 역할 (Role)
 

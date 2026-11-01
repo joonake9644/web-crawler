@@ -5,6 +5,8 @@ description: 소유자 자산에 대한 승인된 방어 보안 점검(자가 �
 
 # 승인된 방어 보안 점검
 
+> **전역 지휘 스킬은 `security-program`이다(단일 원본).** 이 스킬은 web-crawler **저장소 전용 진입점**으로, 범위(`docs/security/SCOPE.md`)와 저장소 고유 자산만 다룬다. 점검 단계·체크리스트·동향 수집 루프의 정본은 전역 `security-program`을 따른다. 두 스킬이 경쟁하지 않게, 일반 보안 점검은 `security-program`이 맡고 이 스킬은 web-crawler 자산의 SCOPE·AUTHORIZATION 입구 역할만 한다.
+
 ## 먼저 읽는다 (순서대로)
 
 1. `docs/security/SCOPE.md` — 범위 안/밖. **범위 밖이면 멈추고 묻는다.**
@@ -22,7 +24,6 @@ description: 소유자 자산에 대한 승인된 방어 보안 점검(자가 �
   (진행 중인 다른 작업이 있으면 `interrupt` 로, `return_to` 는 그 작업).
 - 완료 선언은 `AGENTS.md` 실행 계약 6종이 모두 exit 0 인 출력을 본 뒤에만 한다.
 
-## 다른 프로젝트로 옮길 때
+## 다른 프로젝트에서
 
-이 스킬 폴더와 `docs/security/AUTHORIZATION.md`·`engagement-loop.md` 를 복사하고,
-`SCOPE.md` 만 그 프로젝트의 자산·URL 로 다시 쓴다. 실행 명령 표는 그 프로젝트의 테스트 명령으로 바꾼다.
+이 스킬을 복사해 퍼뜨리지 않는다(단일 원본 원칙, gallery21 `security-program-design.md` D-04). 다른 프로젝트에서는 전역 `security-program` 스킬을 그대로 쓰고, 그 프로젝트의 `docs/security/SCOPE.md` 만 자산·URL 에 맞게 새로 쓴다. 절차·점검표의 정본은 전역 `security-program`(`docs/`·`checklists/`)이다.
