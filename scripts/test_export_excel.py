@@ -78,6 +78,19 @@ def test_export_neutralizes_formula_injection(tmp_path):
         assert str(c.value).startswith("'"), f"col{col} 이 텍스트로 중화되지 않음"
 
 
+def test_export_neutralizes_bytes_formula_injection(tmp_path):
+    # CWE-1236 (리뷰 보강): bytes 값도 openpyxl 이 문자열 수식 셀로 저장하므로 중화해야 한다.
+    # str 만 검사하던 중화를 b"=1+1" 가 우회해 수식으로 저장되던 경로.
+    data = [{"값": b"=1+1", "제목": b"@SUM(1,2)"}]
+    filepath = str(tmp_path / "bytes_inj.xlsx")
+    export_to_excel(data, filepath)
+    ws = load_workbook(filepath).active
+    for col in (1, 2):
+        c = ws.cell(2, col)
+        assert c.data_type != "f", f"col{col} 이 수식으로 저장됨(bytes 우회)"
+        assert str(c.value).startswith("'"), f"col{col} 이 텍스트로 중화되지 않음"
+
+
 def test_export_sanitize_opt_out_keeps_raw(tmp_path):
     # 명시적으로 끄면 원본을 보존한다(신뢰 데이터 전용).
     data = [{"값": "=1+1"}]

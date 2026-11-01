@@ -11,7 +11,13 @@ _FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r", "\n")
 
 
 def _neutralize_formula(value):
-    """문자열 셀이 수식으로 해석되지 않게 중화한다. 문자열이 아니면(숫자·None 등) 그대로 둔다."""
+    """셀 값이 수식으로 해석되지 않게 중화한다. 숫자·None 등은 그대로 둔다.
+
+    bytes 도 다룬다(리뷰 보강): openpyxl 은 bytes 를 문자열 셀로 저장하므로
+    b"=1+1" 가 str 만 검사하던 중화를 우회해 수식 셀이 됐다. 디코딩해 같은 검사를 태운다.
+    """
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
     if isinstance(value, str) and value and value[0] in _FORMULA_TRIGGERS:
         return "'" + value
     return value
