@@ -2,14 +2,14 @@
   "schema_version": "1.0",
   "active_work_id": "PY311-001",
   "stage": "VERIFY",
-  "dirty": true,
-  "verified_commit": "4b9c8d1",
+  "dirty": false,
+  "verified_commit": "d21566c",
   "session_end": {
     "independent_review": {
       "status": "passed",
       "model": "codex/gpt-6.1-sol (reasoning high)",
-      "findings_fixed": 3,
-      "note": "2026-10-17 세션(DIR-002): robots.txt 404·410 이 '확인 못 함' 으로 보고되던 결함(ROBOTS-001) 수정 — _fetch_robots 가 HTTPError 를 코드로 돌려주고, check_robots 는 404·410 만 제한 없음, 그 밖의 비-2xx 는 error. 로컬 ThreadingHTTPServer 로 실제 경로 검사. 독립 리뷰 1차 Medium 1(3xx 회귀)·Low 2 → 재현 후 수정(4b9c8d1), 2차 재검토 '추가 finding 없음'. 기준선 복구로 www.shu.ac.kr 프로필 추가(52fbe25). 상세는 docs/task-contracts/PY311-001.md 'ROBOTS-001' 절."
+      "findings_fixed": 2,
+      "note": "2026-11-06 세션(SEC001-CLOSE, REV-3 과제): SEC-001(#8, 97b752b) 첫 독립 리뷰 FAIL — 국제 전화번호 뒤 콜론·줄바꿈 문맥에서 PII 경고 누락(MEDIUM) → 1cc7421 수정. 재확인 1회차 FAIL — 그 수정이 NBSP·전각 공백 구분 번호를 놓친 회귀(MEDIUM) → d21566c 수정. 재확인 2회차 PASS(15/15). 메인 재현: 감지 10/10, 오탐 0/9. interrupt SEC-001 을 none 으로 닫고 PY311-001 로 복귀. 상세는 docs/task-contracts/SEC-001.md 「SEC001-CLOSE」 절."
     }
   }
 }
