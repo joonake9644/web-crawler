@@ -56,7 +56,7 @@ REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/ta
 
 ## REV-3 — SEC-001 인터럽트 종료를 과제로 명시 (2026-11-06, 초안 · 미승인)
 
-<!-- ADR-BASIS:carry-forward REV-2 sha256:3b255792aedfea981a54bc721145c41cc9a9e2139d93e2eddd06ff70e726c80c -->
+(REV-3 당시 ADR 기준점 계승 표지: REV-2 sha256 3b255792aedfea981a54bc721145c41cc9a9e2139d93e2eddd06ff70e726c80c — REV-4 에서 아래 표지로 넘겼다)
 
 **사유**: 조각 하네스(사용자 결정 D3)는 최신 승인 계획의 과제에만 조각을 묶는다. REV-2 에는 과제 줄·순서 블록이
 없어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다. 정본(`.harness/policy.json`)에 남은
@@ -67,7 +67,7 @@ REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/ta
 
 <!-- PLAN-ORDER: SEC001-CLOSE -->
 
-- [ ] SEC001-CLOSE: SEC-001 인터럽트 종료 — 병합된 #8(97b752b)의 독립 다른-모델 리뷰를 반영하고(지적이 있으면 TDD 로 수정),
+- [x] SEC001-CLOSE: SEC-001 인터럽트 종료 — 병합된 #8(97b752b)의 독립 다른-모델 리뷰를 반영하고(지적이 있으면 TDD 로 수정),
   `.harness/policy.json` 의 `interrupt` 를 `none` 으로, `.harness/state.json`·`docs/session-handoff.md` 를 현재 HEAD 기준으로
   갱신해 PY311-001 로 복귀한다. 근거: `docs/task-contracts/SEC-001.md` 「종료 조건」 1~3.
 
@@ -75,3 +75,19 @@ REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/ta
 
 PY311-001 의 상시 조건은 그대로다: 두 패키지 모두 1.65 출시 시 상한을 함께 올린다
 (2026-11-06 pypi.org 실측: playwright 최신 1.64.1, patchright 최신 1.64.4 — 둘 다 1.65 미출시 → `<1.65` 유지).
+
+## REV-4 — SEC001-CLOSE 완료 표시 (2026-11-06)
+
+<!-- ADR-BASIS:carry-forward REV-3 sha256:b818f7a8517e2588b09819a8ee57796d824c4da78b3d498ef0d7065e7b84b77a -->
+
+**사유**: 조각 SEC001-CLOSE 는 닫혔는데(원장 seq 173, 사용자 입력 `8980b676a2fd` 「SEC001-CLOSE 종료 승인」, 종료 커밋 7859f9b)
+REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순서 첫 미완료」로 계속 보인다. 완료를 계획에 반영한다.
+
+**범위·순서·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: SEC001-CLOSE 과제 줄의 `[ ]` → `[x]`, 그리고 REV-2 계승
+표지 한 줄을 설명 문장으로 바꾼 것(표지는 한 본문에 하나만 읽히므로 REV-3 표지로 넘겼다). REV-3 제목의 「초안 · 미승인」 글귀는
+당시 기록이라 그대로 두며, REV-3 은 사용자 입력 `2cb20cc05c8b` 로 승인됐다.
+
+완료 근거(실측): PR #10 병합 `897ed3c`(2026-11-06 21:30 KST), `.harness/policy.json` `interrupt.status` = `none`,
+`.harness/state.json` `dirty` = `false`·독립 리뷰 passed(Codex gpt-6.1-sol high, 3회 중 3회째 PASS), 실행 계약 6종 exit 0(674 passed).
+
+이 판으로 순서 블록의 미완료 과제는 0개가 된다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
