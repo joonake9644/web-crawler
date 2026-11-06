@@ -739,6 +739,10 @@ def test_pii_flags_international_phone_numbers(value):
     "+14155552671\n2026-11-06",        # 줄바꿈 뒤 날짜까지 한 매치로 먹어 15자리를 넘겼다
     "+1 415 555 2671 2026-11-06 접수",  # 같은 줄 뒤 날짜
     "연락처: +44 20 7946 0958:내선 3",  # 번호 뒤 콜론
+    "+82 2 123 4567",    # NBSP(&nbsp;) 구분 — 줄바꿈만 빼야지 가로 공백까지 빼면 안 된다
+    "+1 (415) 555-2671",      # NBSP + 괄호
+    "+82 2 123 4567",    # 좁은 NBSP
+    "+82　2　123　4567",    # 전각 공백
 ])
 def test_pii_international_phone_survives_trailing_context(value):
     """SEC001-CLOSE — 독립 리뷰(2026-11-06, Codex) MEDIUM: 번호 뒤 문맥 때문에 경고가 사라졌다."""
