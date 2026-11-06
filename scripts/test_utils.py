@@ -735,6 +735,33 @@ def test_pii_flags_international_phone_numbers(value):
 
 
 @pytest.mark.parametrize("value", [
+    "+14155552671: 평일 상담",          # 번호 바로 뒤 콜론 — `+09:00` 방지 규칙에 걸려 놓쳤다
+    "+14155552671\n2026-11-06",        # 줄바꿈 뒤 날짜까지 한 매치로 먹어 15자리를 넘겼다
+    "+1 415 555 2671 2026-11-06 접수",  # 같은 줄 뒤 날짜
+    "연락처: +44 20 7946 0958:내선 3",  # 번호 뒤 콜론
+    "+82 2 123 4567",    # NBSP(&nbsp;) 구분 — 줄바꿈만 빼야지 가로 공백까지 빼면 안 된다
+    "+1 (415) 555-2671",      # NBSP + 괄호
+    "+82 2 123 4567",    # 좁은 NBSP
+    "+82　2　123　4567",    # 전각 공백
+])
+def test_pii_international_phone_survives_trailing_context(value):
+    """SEC001-CLOSE — 독립 리뷰(2026-11-06, Codex) MEDIUM: 번호 뒤 문맥 때문에 경고가 사라졌다."""
+    warnings = detect_pii([{"메모": value}])
+    assert any("전화번호" in w for w in warnings), f"놓침: {value!r}"
+
+
+@pytest.mark.parametrize("value", [
+    "+3967600242987725422 문의",        # 15자리 초과 ID 뒤 문맥 — 잘라서 앞부분만 번호로 보면 안 된다
+    "+12345 67890123456789",           # 짧은 앞부분 + 긴 숫자열
+    "+09:00:00",                       # 시간대 오프셋 변형
+])
+def test_pii_international_phone_trimming_keeps_id_guard(value):
+    """뒤 문맥을 잘라 판정하더라도 숫자열 한가운데서 자르면 안 된다(F11 ID 오탐 규율)."""
+    warnings = detect_pii([{"참조": value}])
+    assert not any("전화번호" in w for w in warnings), f"오탐: {value!r} → {warnings}"
+
+
+@pytest.mark.parametrize("value", [
     "C++ 17",                          # 숫자가 짧다
     "score +12345",                    # 8자리 미만
     "q=a+14155552671",                 # 앞이 글자 — URL 쿼리 속 숫자

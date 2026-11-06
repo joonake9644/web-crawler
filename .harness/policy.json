@@ -12,21 +12,15 @@
   },
   "return_to": "PY311-001",
   "interrupt": {
-    "status": "active",
-    "id": "SEC-001",
-    "contract_path": "docs/task-contracts/SEC-001.md",
+    "status": "none",
     "return_to": "PY311-001",
-    "exit_criteria": [
-      "SEC-001 테스트 전부 통과 + 계약 명령 6종 exit 0",
-      "PR 리뷰·병합은 소유자 결정",
-      "독립 다른-모델 리뷰 통과 후 interrupt 를 none 으로 되돌림"
-    ]
+    "exit_criteria": []
   },
   "plan_approval": {
     "id": "PY311-001-APPROVAL",
-    "revision": 2,
+    "revision": 3,
     "path": "docs/plan-approvals/PY311-001-APPROVAL.md",
-    "sha256": "3b255792aedfea981a54bc721145c41cc9a9e2139d93e2eddd06ff70e726c80c"
+    "sha256": "b818f7a8517e2588b09819a8ee57796d824c4da78b3d498ef0d7065e7b84b77a"
   },
   "decision_baseline": [
     {

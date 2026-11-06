@@ -37,7 +37,7 @@ RED 확인을 먼저 로그로 남긴다. `test_playwright_has_upper_bound` 는 
 
 ## REV-2 — ADR 기준점 명시 (2026-10-16)
 
-<!-- ADR-BASIS:carry-forward REV-1 sha256:da7eb99e50c39feb1b823cbdfa0f4ffaadaa2e65d455ef71c481ed75b5d91ba4 -->
+(REV-2 당시 ADR 기준점 계승 표지: REV-1 sha256 da7eb99e50c39feb1b823cbdfa0f4ffaadaa2e65d455ef71c481ed75b5d91ba4 — REV-3 에서 아래 표지로 넘겼다)
 
 **승인**: 저장소 소유자 — 원문 「권장 작업 진행이죠」 (권장 순서 1번 "REV-1 내용 그대로 ADR 기준점만 추가해 재승인" 에 대한 답)
 **사유**: `plan check` 의 유일한 WARN "REV-1는 구형 계획으로 ADR 기준점(adr_basis)이 없다" 를 닫는다.
@@ -53,3 +53,25 @@ RED 확인을 먼저 로그로 남긴다. `test_playwright_has_upper_bound` 는 
 REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/task-contracts/PY311-001.md`):
 - ubuntu/x86_64 러너 통과 — 2026-10-01 PR #1 CI 로 실측되어 위 UNVERIFIED 첫 항목은 닫혔다.
 - playwright 1.64.0 출시(2026-10-13)·patchright 1.63.0 최신(2026-10-15 실측) — 상한 `<1.64` 유지.
+
+## REV-3 — SEC-001 인터럽트 종료를 과제로 명시 (2026-11-06, 초안 · 미승인)
+
+<!-- ADR-BASIS:carry-forward REV-2 sha256:3b255792aedfea981a54bc721145c41cc9a9e2139d93e2eddd06ff70e726c80c -->
+
+**사유**: 조각 하네스(사용자 결정 D3)는 최신 승인 계획의 과제에만 조각을 묶는다. REV-2 에는 과제 줄·순서 블록이
+없어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다. 정본(`.harness/policy.json`)에 남은
+유일한 미완 항목인 SEC-001 인터럽트 종료를 과제로 적는다.
+
+**REV-1·REV-2 의 범위·완료 기준은 바꾸지 않는다.** 위 본문을 그대로 계승하고, 바뀐 줄은 REV-1 계승 표지 한 줄을
+설명 문장으로 바꾼 것뿐이다(표지는 한 본문에 하나만 읽히므로 REV-2 표지로 넘겼다).
+
+<!-- PLAN-ORDER: SEC001-CLOSE -->
+
+- [ ] SEC001-CLOSE: SEC-001 인터럽트 종료 — 병합된 #8(97b752b)의 독립 다른-모델 리뷰를 반영하고(지적이 있으면 TDD 로 수정),
+  `.harness/policy.json` 의 `interrupt` 를 `none` 으로, `.harness/state.json`·`docs/session-handoff.md` 를 현재 HEAD 기준으로
+  갱신해 PY311-001 로 복귀한다. 근거: `docs/task-contracts/SEC-001.md` 「종료 조건」 1~3.
+
+완료 판정(검사 명령): 실행 계약 6종 exit 0, `python scripts/continuity_check.py` 가 interrupt 없음 상태를 통과.
+
+PY311-001 의 상시 조건은 그대로다: 두 패키지 모두 1.65 출시 시 상한을 함께 올린다
+(2026-11-06 pypi.org 실측: playwright 최신 1.64.1, patchright 최신 1.64.4 — 둘 다 1.65 미출시 → `<1.65` 유지).
