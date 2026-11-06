@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `a0fd467a9a697e3ed1ce11a3d950acf9f7987099d21b5ddcc3e385ae67b7614e`
+- 입력 다이제스트: `9204ccbf4f531f70fd7b811d74790eca512a76ce57617f24c016395c3b452788`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `8f9146f` · 브랜치 `chore/sec001-close`
+측정 시점 HEAD: `897ed3c` · 브랜치 `chore/rev4-sec001-done`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- 897ed3c Merge pull request #10 from joonake9644/chore/sec001-close
+- 7859f9b chore(harness): 세션 핸드오프 생성과 SEC001-CLOSE 갭·종료 분류 기록
 - 8f9146f chore(harness): SEC-001 인터럽트를 닫고 PY311-001 로 복귀한다 (SEC001-CLOSE)
 - d21566c fix(utils): 국제 전화번호 구분자에 NBSP 등 가로 공백을 되살린다 (SEC001-CLOSE)
 - 1cc7421 fix(utils): 국제 전화번호 뒤 콜론·줄바꿈 문맥 때문에 PII 경고가 사라지던 결함 (SEC001-CLOSE)
@@ -49,8 +51,6 @@
 - afa6295 Merge pull request #6 from joonake9644/fix/robots-404
 - 823eace chore(plan): install slice-loop harness (ADR-0005) CLI from plan-continuity-harness-v2
 - d45df33 chore(harness): 세션 종료 — ROBOTS-001 리뷰 기록과 핸드오프를 반영한다 (DIR-002)
-- 4b9c8d1 fix(utils): 풀리지 않은 3xx 를 허용으로 통과시키지 않고, 오류 본문 없이 코드로 판정한다 (DIR-002)
-- e337bba fix(utils): robots.txt 404·410 을 '확인 못 함' 이 아니라 '제한 없음' 으로 판정한다 (DIR-002)
 
 ## 남은 것 / 다음 세션
 
@@ -61,7 +61,7 @@
 ## 다음 세션 즉시 시작
 
 ```text
-세션 이어받기. 프로젝트: /Users/joonake/Developer/worktrees/web-crawler/sec001-close
+세션 이어받기. 프로젝트: /Users/joonake/Developer/worktrees/web-crawler/rev4-sec001-done
 먼저 docs/session-handoff.md 와 .harness/state.json 을 읽는다.
 그리고 baseline 확인: python -m pytest -q -k "not e2e"  (위 표의 통과 수와 같아야 한다)
 활성 작업: PY311-001 — 계약 docs/task-contracts/PY311-001.md
