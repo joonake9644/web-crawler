@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `368e6cd87c30e730bcbe3cfc7bb091efcbc03fde3f11506a994ee02239766408`
+- 입력 다이제스트: `4033497b922f6e918515373255abc3f3fe43baff4de56c0d4df858e50054b1b4`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `df62c9a` · 브랜치 `chore/rev5-secintel-dep`
+측정 시점 HEAD: `99218be` · 브랜치 `chore/rev6-dep001-certifi`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,11 @@
 
 ## 이번 세션에 한 일
 
+- 99218be Merge pull request #13 from joonake9644/chore/secintel-001
+- 1a5aa88 sec(intel): 2026-11 보안 인텔 재수집 요약과 조각 갭·종료 분류 (SECINTEL-001)
+- 1f24ae4 chore(slice): SECINTEL-001 조각 계약(보안 인텔 재수집, REV-5 과제 1)
+- e2f290f Merge pull request #12 from joonake9644/chore/rev5-secintel-dep
+- 478e1b3 chore(plan): REV-5 — 보안 인텔 재수집(SECINTEL-001)과 scrapling 0.5 평가(DEP-001)를 과제로 추가
 - df62c9a Merge pull request #11 from joonake9644/chore/rev4-sec001-done
 - 6fa8588 chore(plan): REV-4 — SEC001-CLOSE 완료 표시
 - 897ed3c Merge pull request #10 from joonake9644/chore/sec001-close
@@ -46,11 +51,6 @@
 - 8f9146f chore(harness): SEC-001 인터럽트를 닫고 PY311-001 로 복귀한다 (SEC001-CLOSE)
 - d21566c fix(utils): 국제 전화번호 구분자에 NBSP 등 가로 공백을 되살린다 (SEC001-CLOSE)
 - 1cc7421 fix(utils): 국제 전화번호 뒤 콜론·줄바꿈 문맥 때문에 PII 경고가 사라지던 결함 (SEC001-CLOSE)
-- 776936c chore(plan): REV-3 — SEC001-CLOSE 과제와 순서 블록 추가, 조각 계약
-- ad0b845 sec(redteam): 자가 레드팀 발견 2건 수정 (엑셀 수식 주입·Chrome 인자 주입) (#9)
-- 97b752b sec(SEC-001): 방어 목적 자가 점검 자산 + PII·비밀파일·자가치유 결함 수정 (#8)
-- 735681b Merge pull request #7 from joonake9644/chore/plan-harness-slice-loop
-- afa6295 Merge pull request #6 from joonake9644/fix/robots-404
 
 ## 남은 것 / 다음 세션
 
