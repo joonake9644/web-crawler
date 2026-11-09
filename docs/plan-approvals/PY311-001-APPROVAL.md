@@ -65,7 +65,7 @@ REV-1 이후 실측으로 바뀐 사실(계획 변경 아님, 근거는 `docs/ta
 **REV-1·REV-2 의 범위·완료 기준은 바꾸지 않는다.** 위 본문을 그대로 계승하고, 바뀐 줄은 REV-1 계승 표지 한 줄을
 설명 문장으로 바꾼 것뿐이다(표지는 한 본문에 하나만 읽히므로 REV-2 표지로 넘겼다).
 
-<!-- PLAN-ORDER: SEC001-CLOSE -->
+(REV-3 당시 순서 블록: SEC001-CLOSE — REV-5 에서 아래 순서 블록으로 넘겼다)
 
 - [x] SEC001-CLOSE: SEC-001 인터럽트 종료 — 병합된 #8(97b752b)의 독립 다른-모델 리뷰를 반영하고(지적이 있으면 TDD 로 수정),
   `.harness/policy.json` 의 `interrupt` 를 `none` 으로, `.harness/state.json`·`docs/session-handoff.md` 를 현재 HEAD 기준으로
@@ -78,7 +78,7 @@ PY311-001 의 상시 조건은 그대로다: 두 패키지 모두 1.65 출시 �
 
 ## REV-4 — SEC001-CLOSE 완료 표시 (2026-11-06)
 
-<!-- ADR-BASIS:carry-forward REV-3 sha256:b818f7a8517e2588b09819a8ee57796d824c4da78b3d498ef0d7065e7b84b77a -->
+(REV-4 당시 ADR 기준점 계승 표지: REV-3 sha256 b818f7a8517e2588b09819a8ee57796d824c4da78b3d498ef0d7065e7b84b77a — REV-5 에서 아래 표지로 넘겼다)
 
 **사유**: 조각 SEC001-CLOSE 는 닫혔는데(원장 seq 173, 사용자 입력 `8980b676a2fd` 「SEC001-CLOSE 종료 승인」, 종료 커밋 7859f9b)
 REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순서 첫 미완료」로 계속 보인다. 완료를 계획에 반영한다.
@@ -91,3 +91,37 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 `.harness/state.json` `dirty` = `false`·독립 리뷰 passed(Codex gpt-6.1-sol high, 3회 중 3회째 PASS), 실행 계약 6종 exit 0(674 passed).
 
 이 판으로 순서 블록의 미완료 과제는 0개가 된다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
+
+## REV-5 — 보안 인텔 재수집과 scrapling 0.5 평가를 과제로 추가 (2026-11-09)
+
+<!-- ADR-BASIS:carry-forward REV-4 sha256:96dfafd915cb5c06a5d435e178ac92f341c7ba24632b76478d15b2f67822712e -->
+
+**사유**: REV-4 로 순서 블록의 미완료 과제가 0개가 되어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다.
+사용자가 다음 과제를 골랐다(입력 「보안 인텔 재수집과 scrapling 0.5 평가를 REV-5 과제로 넣는 개정안 만들어」, 2026-11-09).
+순서는 사용자가 정한 대로 보안 인텔 재수집 → scrapling 0.5 평가다. 앞 과제에서 취약점이 나오면 뒤 과제의 급한 정도가 달라진다.
+
+**REV-1~REV-4 의 범위·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: REV-3 순서 블록과 REV-3 계승 표지를 설명 문장으로
+바꾼 것(순서 블록과 계승 표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다). 완료된 SEC001-CLOSE 는 순서에 그대로 둔다.
+
+출발 실측(2026-11-09, pypi.org JSON·`.venv` `pip list`·`docs/security/intel-brief-2026-10-31.md`):
+
+| 항목 | 값 |
+|------|-----|
+| 마지막 보안 인텔 브리프 | 2026-10-31, 「다음 수집: 7일 뒤」 → 2026-11-07 신선도 기준 지남 |
+| scrapling | 제약 `>=0.4.8,<0.5`(`requirements.txt:19`), 로컬 0.4.15(2026-08-23), PyPI 최신 0.5.1(2026-11-04) |
+| playwright · patchright | 제약 `>=1.62,<1.65`(바이트 동일, ADR-002), 로컬 1.62.0 · 1.62.3, 범위 안 최신 1.64.1 · 1.64.4, 둘 다 1.65 미출시 |
+| curl_cffi | 제약 `>=0.16`, 로컬 0.16.3, PyPI 최신 0.17.0(2026-10-26) |
+
+<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001 -->
+
+- [ ] SECINTEL-001: 보안 인텔 재수집 — 설치 의존성·런타임을 공개 취약점 데이터(OSV 등)와 다시 대조하고,
+  `docs/security/intel-brief-2026-11-09.md`(공개 저장소라 결과 요약만)와 비공개 증거 폴더 상세 브리프를 남긴다.
+  취약점이 나오면 고치지 않고 등급·영향 경로·고칠 과제를 보고한다(수정은 사용자 승인으로 새 과제). 근거: 전역 스킬 `security-program`, `docs/security/SCOPE.md`.
+- [ ] DEP-001: scrapling 0.5 호환 평가와 런타임 범위 안 갱신 — 0.5 의 바뀐 점을 원문(변경 기록·릴리스 노트)으로 확인하고,
+  0.5.1 을 따로 만든 환경(3.14 로컬·3.11 CI 판)에 설치해 스위트와 이 저장소가 쓰는 fetcher 경로를 돌린다. 결과에 따라 상한을 옮기거나(TDD: 상한 검사 먼저 RED)
+  `<0.5` 유지 근거를 기록한다. 같은 과제에서 로컬 venv 를 허용 범위 안 최신(playwright·patchright 1.64.x, curl_cffi 0.17.x)으로 맞추되
+  playwright·patchright 제약식의 바이트 동일(ADR-002)은 깨지 않는다.
+
+완료 판정(검사 명령, 두 과제 공통): 실행 계약 6종 exit 0(`AGENTS.md` 「제품 변경 전」). DEP-001 은 추가로 3.11 환경의 `pytest -q -k "not e2e"` exit 0.
+
+하지 않는 것: playwright·patchright 상한 `<1.65` 변경(PY311-001 상시 조건 그대로), scrapling 0.5 의 새 기능 도입(호환 확인까지만), 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
