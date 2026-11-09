@@ -33,9 +33,17 @@
 
 ## 갭 목록
 - LOW: 계획 REV-5 가 브리프 파일 이름을 작성일(2026-11-09)로 정했고 실제 수집은 2026-11-10 이다. 파일 이름은 계획대로 두고 본문에 수집 시각을 적는다.
+- HIGH(이 조각에서 고치지 않음, 불변 제약): 간접 의존 certifi 2026.7.22 에 GHSA-6q48-6c7w-9gw2(CRITICAL, 유출된 emSign 중간 CA). 고칠 과제 후보: `requirements.txt` 에 `certifi>=2026.10.19` 하한 + venv 갱신 + 하한 검사(TDD). DEP-001 에 넣으려면 계획 개정(사용자 승인).
+- LOW: 구동 Chromium 156.0.8078.4 가 안정판 158.0.8127.18 보다 두 메이저 뒤. DEP-001 런타임 갱신에서 잰다.
+- LOW: Chromium·curl_cffi 내장 libcurl 의 Brotli 판(KEV CVE-2026-111497) 미확인.
+- LOW: CISA 사이트 피드가 자동 조회를 403 으로 막음 → GitHub 사본(cisagov/kev-data)으로 대체. 다음 수집도 같은 경로.
+- LOW(앞 조각 SEC001-CLOSE 에서 넘김): master 기준 체크아웃 엔진 사본 8f3277 표시 결함·로컬 커밋 319dee0 — applygo36 ADR-019 하네스 동결로 정기 점검 대상.
+- LOW(앞 조각에서 넘김): `+1 415 555 2671 2026-11-06 접수` 를 국내 패턴이 잡음(경고는 나옴, 제품 영향 없음).
+- LOW(앞 조각에서 넘김): 병합된 로컬 브랜치·orca 작업트리 barracuda 정리(사용자 확인 뒤).
+- 닫힘(앞 조각에서 넘김): REV-3 과제 SEC001-CLOSE 완료 표시 — REV-4 에서 처리됨.
 
 ## 종료 분류
-- missing:
-- partial:
-- contradicts:
-- unrequested:
+- missing: 없음
+- partial: 없음
+- contradicts: 없음
+- unrequested: 없음
