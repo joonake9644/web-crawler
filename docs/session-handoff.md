@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `9204ccbf4f531f70fd7b811d74790eca512a76ce57617f24c016395c3b452788`
+- 입력 다이제스트: `368e6cd87c30e730bcbe3cfc7bb091efcbc03fde3f11506a994ee02239766408`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `897ed3c` · 브랜치 `chore/rev4-sec001-done`
+측정 시점 HEAD: `df62c9a` · 브랜치 `chore/rev5-secintel-dep`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- df62c9a Merge pull request #11 from joonake9644/chore/rev4-sec001-done
+- 6fa8588 chore(plan): REV-4 — SEC001-CLOSE 완료 표시
 - 897ed3c Merge pull request #10 from joonake9644/chore/sec001-close
 - 7859f9b chore(harness): 세션 핸드오프 생성과 SEC001-CLOSE 갭·종료 분류 기록
 - 8f9146f chore(harness): SEC-001 인터럽트를 닫고 PY311-001 로 복귀한다 (SEC001-CLOSE)
@@ -49,8 +51,6 @@
 - 97b752b sec(SEC-001): 방어 목적 자가 점검 자산 + PII·비밀파일·자가치유 결함 수정 (#8)
 - 735681b Merge pull request #7 from joonake9644/chore/plan-harness-slice-loop
 - afa6295 Merge pull request #6 from joonake9644/fix/robots-404
-- 823eace chore(plan): install slice-loop harness (ADR-0005) CLI from plan-continuity-harness-v2
-- d45df33 chore(harness): 세션 종료 — ROBOTS-001 리뷰 기록과 핸드오프를 반영한다 (DIR-002)
 
 ## 남은 것 / 다음 세션
 
@@ -61,7 +61,7 @@
 ## 다음 세션 즉시 시작
 
 ```text
-세션 이어받기. 프로젝트: /Users/joonake/Developer/worktrees/web-crawler/rev4-sec001-done
+세션 이어받기. 프로젝트: /Users/joonake/Developer/worktrees/web-crawler/rev5-secintel-dep
 먼저 docs/session-handoff.md 와 .harness/state.json 을 읽는다.
 그리고 baseline 확인: python -m pytest -q -k "not e2e"  (위 표의 통과 수와 같아야 한다)
 활성 작업: PY311-001 — 계약 docs/task-contracts/PY311-001.md
