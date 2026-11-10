@@ -9,19 +9,19 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `4033497b922f6e918515373255abc3f3fe43baff4de56c0d4df858e50054b1b4`
+- 입력 다이제스트: `56c6f7dc75c53186f212c3cd2df6f0027e52668fd709a6ad3ef0dcb7d2a95e57`
 
 ## 상태 한 줄 요약
 
 - 활성 작업: **PY311-001** — 계약 `docs/task-contracts/PY311-001.md`
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `VERIFY` / dirty=`False`
-- 검증 커밋: `d21566c`
-- 작업 도구: **codex/gpt-6.1-sol (reasoning high)**
+- 검증 커밋: `f226640`
+- 작업 도구: **codex/gpt-6.1-sol (reasoning high) · opencode-go/deepseek-v4.1-flash#max · grok-4.7 (xhigh)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `99218be` · 브랜치 `chore/rev6-dep001-certifi`
+측정 시점 HEAD: `f226640` · 브랜치 `chore/dep-001`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 674 passed, 14 deselected, 2 warnings |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 675 passed, 14 deselected, 2 warnings |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,18 +39,18 @@
 
 ## 이번 세션에 한 일
 
+- f226640 docs(deps): 독립 리뷰 LOW 반영 — 사용처 목록·시험 수 시점·certifi 주석 정정, 갭·종료 분류 기록
+- 7605511 fix(deps): certifi 하한(GHSA-6q48-6c7w-9gw2)과 scrapling 0.5 비호환 판정 기록
+- 96435ea chore(plan): DEP-001 평가 문서 경로를 추적 예외에 추가
+- a01078c chore(plan): DEP-001 조각 계약 — scrapling 0.5 호환 판정·런타임 갱신·certifi 하한
+- d2fe4de Merge pull request #14 from joonake9644/chore/rev6-dep001-certifi
+- af12e73 chore(plan): REV-6 — SECINTEL-001 완료 표시와 DEP-001 에 certifi 하한 추가
 - 99218be Merge pull request #13 from joonake9644/chore/secintel-001
 - 1a5aa88 sec(intel): 2026-11 보안 인텔 재수집 요약과 조각 갭·종료 분류 (SECINTEL-001)
 - 1f24ae4 chore(slice): SECINTEL-001 조각 계약(보안 인텔 재수집, REV-5 과제 1)
 - e2f290f Merge pull request #12 from joonake9644/chore/rev5-secintel-dep
 - 478e1b3 chore(plan): REV-5 — 보안 인텔 재수집(SECINTEL-001)과 scrapling 0.5 평가(DEP-001)를 과제로 추가
 - df62c9a Merge pull request #11 from joonake9644/chore/rev4-sec001-done
-- 6fa8588 chore(plan): REV-4 — SEC001-CLOSE 완료 표시
-- 897ed3c Merge pull request #10 from joonake9644/chore/sec001-close
-- 7859f9b chore(harness): 세션 핸드오프 생성과 SEC001-CLOSE 갭·종료 분류 기록
-- 8f9146f chore(harness): SEC-001 인터럽트를 닫고 PY311-001 로 복귀한다 (SEC001-CLOSE)
-- d21566c fix(utils): 국제 전화번호 구분자에 NBSP 등 가로 공백을 되살린다 (SEC001-CLOSE)
-- 1cc7421 fix(utils): 국제 전화번호 뒤 콜론·줄바꿈 문맥 때문에 PII 경고가 사라지던 결함 (SEC001-CLOSE)
 
 ## 남은 것 / 다음 세션
 
