@@ -213,6 +213,27 @@ def test_scrapling_has_upper_bound():
     )
 
 
+_CERTIFI_SAFE = (2026, 10, 19)
+
+
+def test_certifi_has_safe_lower_bound():
+    """certifi 하한이 유출된 emSign 중간 CA 를 뺀 판 이상이다(GHSA-6q48-6c7w-9gw2, DEP-001).
+
+    certifi 는 curl_cffi 의 전이 의존이라 우리 코드가 import 하지 않는다. 그래도 사다리 4단
+    경량 그리드(curl_cffi)의 기본 CA 묶음이라, 하한이 없으면 옛 venv 가 그 루트를 계속 믿는다.
+    2026.10.18 은 emSign 루트를 전부 뺐고 2026.10.19 는 영향 없는 루트를 되살렸다(권장 판).
+    """
+    constraint = _constraint("certifi")
+    match = re.search(r">=\s*(\d+(?:\.\d+)*)", constraint.split(";", 1)[0])
+    assert match, (
+        f"certifi 에 하한이 없습니다 (제약식={constraint!r}) — "
+        "GHSA-6q48-6c7w-9gw2 를 고친 판을 강제하려면 `certifi>=2026.10.19` 가 필요합니다"
+    )
+    assert _release(match.group(1)) >= _CERTIFI_SAFE, (
+        f"certifi 하한 {match.group(1)} 이 2026.10.19 보다 낮습니다 (GHSA-6q48-6c7w-9gw2)"
+    )
+
+
 def test_protego_comment_is_true():
     """requirements.txt 의 주석이 실제 코드와 일치하는지.
 
