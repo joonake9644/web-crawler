@@ -66,6 +66,7 @@ docs/*
 !docs/reference/
 docs/reference/*
 !docs/reference/getdesign-ai-comparison.md
+!docs/reference/scrapling-0.5-compat-2026-11.md
 # 크롤링 운영 상세 — CLAUDE.md 에서 원문 이관한 안전·통지·Fetcher 트리 등(2026-10-02).
 # 무시되면 CLAUDE.md 의 링크가 끊기고 옮긴 규칙이 clean clone 에서 사라진다.
 !docs/crawl-reference.md
