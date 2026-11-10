@@ -66,6 +66,7 @@ docs/*
 !docs/reference/
 docs/reference/*
 !docs/reference/getdesign-ai-comparison.md
+!docs/reference/scrapling-0.5-compat-2026-11.md
 # 크롤링 운영 상세 — CLAUDE.md 에서 원문 이관한 안전·통지·Fetcher 트리 등(2026-10-02).
 # 무시되면 CLAUDE.md 의 링크가 끊기고 옮긴 규칙이 clean clone 에서 사라진다.
 !docs/crawl-reference.md
@@ -84,6 +85,7 @@ docs/task-contracts/*
 !docs/task-contracts/SEC-001.md
 !docs/task-contracts/SEC001-CLOSE.slice.md
 !docs/task-contracts/SECINTEL-001.slice.md
+!docs/task-contracts/DEP-001.slice.md
 # 방어 보안 자산 — AUTHORIZATION·SCOPE·루프·인텔 브리프(2026-10-31 SEC-001).
 # CLAUDE.md 와 .claude/skills/authorized-defensive-security 가 링크한다. 무시되면 clean clone 에서 끊긴다.
 !docs/security/
