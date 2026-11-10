@@ -432,29 +432,53 @@ def plain_dynamic(url: str, *, network_idle: bool = False, page_action=None,
             "google_search=True 는 Referer: https://www.google.com/ 를 지어낸다 — "
             "사다리 A 3단에서는 쓰지 않는다(출처 조작 금지)")
     from playwright.sync_api import sync_playwright  # lazy — 위장 없는 playwright
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
     from scrapling.engines.toolbelt.custom import Response
 
+    # 옛 3단(scrapling 0.4.15 DynamicFetcher)과 같은 의미를 지킨다(DEP-002 독립 리뷰):
+    # ① load 뒤 networkidle 은 기다려 보되, 끝나지 않는 요청(분석·롱폴링)이 있으면 그린 문서를 그대로 쓴다
+    # ② page_action 다음에 wait_selector 를 attached 상태로 기다린다(숨은 요소도 기다릴 수 있다)
+    # ③ status·헤더는 page_action 뒤 마지막 메인 문서 응답에서, 쿠키는 전체 레코드로 돌려준다
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
         try:
             context = browser.new_context()
             page = context.new_page()
-            response = page.goto(url, timeout=timeout,
-                                 wait_until="networkidle" if network_idle else "load")
-            if wait_selector:
-                page.wait_for_selector(wait_selector, timeout=timeout)
+            last_document = []
+
+            def _track_document(resp):
+                req = resp.request
+                if (req.resource_type == "document" and req.is_navigation_request()
+                        and req.frame == page.main_frame):
+                    last_document[:] = [resp]
+
+            page.on("response", _track_document)
+
+            def _settle():
+                if network_idle:
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=timeout)
+                    except PlaywrightTimeoutError:
+                        pass
+
+            first = page.goto(url, timeout=timeout, wait_until="load")
+            _settle()
             if page_action is not None:
                 page_action(page)
+            if wait_selector:
+                page.locator(wait_selector).first.wait_for(state="attached", timeout=timeout)
+                _settle()
             html = page.content()
-            cookies = {c["name"]: c["value"] for c in context.cookies()}
-            # file:// 처럼 HTTP 응답이 없는 탐색은 상태를 지어내지 않고 0 으로 둔다.
-            status = response.status if response is not None else 0
+            final = last_document[0] if last_document else first
+            cookies = tuple(dict(c) for c in context.cookies())
+            # 응답 객체가 없는 탐색은 상태를 지어내지 않고 0 으로 둔다.
             return Response(
-                url=page.url, content=html, status=status,
-                reason=response.status_text if response is not None else "",
+                url=page.url, content=html,
+                status=final.status if final is not None else 0,
+                reason=final.status_text if final is not None else "",
                 cookies=cookies,
-                headers=dict(response.headers) if response is not None else {},
-                request_headers=dict(response.request.headers) if response is not None else {},
+                headers=final.all_headers() if final is not None else {},
+                request_headers=final.request.all_headers() if final is not None else {},
                 encoding="utf-8", method="GET",
             )
         finally:

@@ -111,12 +111,14 @@ page = plain_dynamic("https://example.com", network_idle=True)
 
 ### 파라미터(이것만 받는다 — 그 밖의 인자는 `TypeError`)
 
-- `network_idle=True` — 네트워크 요청이 안정될 때까지 대기 (추천)
+- `network_idle=True` — 네트워크 요청이 안정될 때까지 대기 (추천). 끝나지 않는 요청(분석·롱폴링)이 있으면 `timeout` 뒤 그린 문서를 그대로 돌려준다(실패로 치지 않음)
 - `page_action=<함수>` — 로드 뒤 playwright `page` 를 받아 클릭·스크롤 같은 조작
-- `wait_selector="..."` — 이 선택자가 나타날 때까지 대기
+- `wait_selector="..."` — `page_action` **다음에**, 이 선택자가 DOM 에 붙을 때까지(`attached`, 숨은 요소 포함) 대기
 - `timeout=30000` — 밀리초
 - `headless=True` — GUI 없이 실행
 - `google_search=True` 는 가짜 `Referer` 를 붙이는 손잡이라 거부한다
+
+반환값: `.status`·`.reason`·`.headers`(`set-cookie` 포함)는 `page_action` 뒤 **마지막 메인 문서 응답**에서, `.cookies` 는 브라우저 쿠키 전체 레코드의 튜플(`name`·`value`·`domain`·`path` …)이다 — 옛 3단(scrapling 0.4 `DynamicFetcher`)과 같다.
 
 ## 4. 무한 스크롤(옛 DynamicSession 자리)
 

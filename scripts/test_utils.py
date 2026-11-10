@@ -630,11 +630,16 @@ def test_dynamic_kwargs_disables_fabricated_referer():
 class _FakeResponse:
     status = 200
     status_text = "OK"
-    headers = {"content-type": "text/html"}
+
+    def all_headers(self):
+        return {"content-type": "text/html"}
 
     class request:
-        headers = {"user-agent": "real-browser"}
         method = "GET"
+
+        @staticmethod
+        def all_headers():
+            return {"user-agent": "real-browser"}
 
 
 class _FakePage:
@@ -644,10 +649,27 @@ class _FakePage:
 
     def goto(self, url, **kw):
         self.log["goto"] = (url, kw)
+        self.log.setdefault("order", []).append("goto")
         return _FakeResponse()
 
-    def wait_for_selector(self, selector, **kw):
-        self.log["wait_selector"] = (selector, kw)
+    def on(self, event, handler):
+        self.log.setdefault("handlers", []).append(event)
+
+    def wait_for_load_state(self, state, **kw):
+        self.log.setdefault("load_states", []).append(state)
+
+    def locator(self, selector):
+        log = self.log
+
+        class _First:
+            def wait_for(self, **kw):
+                log["wait_selector"] = (selector, kw)
+                log.setdefault("order", []).append("wait_selector")
+
+        class _Locator:
+            first = _First()
+
+        return _Locator()
 
     def content(self):
         return "<html><body><p class='v'>렌더됨</p></body></html>"
@@ -711,16 +733,19 @@ def test_plain_dynamic_uses_plain_playwright_and_returns_scrapling_response(monk
     actions = []
 
     page = plain_dynamic("https://example.com", network_idle=True,
-                         page_action=lambda p: actions.append(p), wait_selector="p.v")
+                         page_action=lambda p: (actions.append(p), log["order"].append("action")),
+                         wait_selector="p.v")
 
     assert log["launch"]["headless"] is True
     url, goto_kw = log["goto"]
     assert url == "https://example.com"
-    assert goto_kw["wait_until"] == "networkidle"
+    assert goto_kw["wait_until"] == "load"
+    assert "networkidle" in log["load_states"]                     # 기다려 보되 실패로 치지 않는다
     assert "referer" not in {k.lower() for k in goto_kw}           # 출처를 지어내지 않는다
     assert log["context_kw"].get("extra_http_headers") in (None, {})  # 위장 헤더 없음
-    assert log["wait_selector"][0] == "p.v"
+    assert log["wait_selector"] == ("p.v", {"state": "attached", "timeout": 30_000})
     assert actions == [log["page"]]
+    assert log["order"] == ["goto", "action", "wait_selector"]     # 옛 3단 순서
     assert log["closed"] is True
     assert page.status == 200
     assert page.url == "https://example.com/final"
@@ -732,6 +757,7 @@ def test_plain_dynamic_waits_for_load_without_network_idle(monkeypatch):
     monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
     plain_dynamic("https://example.com")
     assert log["goto"][1]["wait_until"] == "load"
+    assert "networkidle" not in log.get("load_states", [])
 
 
 def test_plain_dynamic_refuses_fabricated_referer(monkeypatch):
@@ -761,6 +787,99 @@ def test_plain_dynamic_renders_local_js_page(tmp_path):
         "</script></body></html>", encoding="utf-8")
     page = plain_dynamic(html.as_uri())
     assert page.css("span.item::text").get() == "JS로 그림"
+
+
+# DEP-002 독립 리뷰(Codex·DeepSeek·Grok 공통) — 옛 3단(scrapling 0.4.15 DynamicFetcher)과 같은 의미를
+# 지킨다: networkidle 이 끝나지 않아도 그린 문서를 돌려주고, page_action 뒤에 wait_selector(attached)를
+# 기다리며, status·헤더는 마지막 문서 응답에서, 쿠키는 전체 레코드로 돌려준다.
+
+@pytest.fixture
+def local_site():
+    import http.server
+    import threading
+    import time as _time
+
+    pages = {
+        "/never-idle": (200, [], "<html><body><p class='ok'>그림</p>"
+                                 "<script>fetch('/hold')</script></body></html>"),
+        "/start": (200, [("X-Page", "start")],
+                   "<html><body><a id='go' href='/error'>go</a></body></html>"),
+        "/error": (503, [("X-Page", "error")], "<html><body><p>점검 중</p></body></html>"),
+        "/cookies": (200, [("Set-Cookie", "sid=root; Path=/"),
+                           ("Set-Cookie", "sid=scoped; Path=/scope")],
+                     "<html><body><p>쿠키</p></body></html>"),
+    }
+
+    class _H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/hold":
+                _time.sleep(10)                      # 끝나지 않는 요청(분석·롱폴링 흉내)
+                return
+            status, headers, body = pages.get(self.path, (404, [], "없음"))
+            data = body.encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            for k, v in headers:
+                self.send_header(k, v)
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _H)
+    server.daemon_threads = True
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_address[1]}"
+    server.shutdown()
+
+
+def test_plain_dynamic_returns_rendered_page_when_network_never_idles(local_site):
+    page = plain_dynamic(f"{local_site}/never-idle", network_idle=True, timeout=1500)
+    assert page.status == 200
+    assert page.css("p.ok::text").get() == "그림"
+
+
+def test_plain_dynamic_runs_page_action_before_wait_selector(tmp_path):
+    html = tmp_path / "click.html"
+    html.write_text(
+        "<html><body><button id='more'>더 보기</button><script>"
+        "document.getElementById('more').onclick = () => setTimeout(() => {"
+        "  const s = document.createElement('span'); s.className = 'late'; s.textContent = '늦게';"
+        "  document.body.appendChild(s); }, 100);"
+        "</script></body></html>", encoding="utf-8")
+    page = plain_dynamic(html.as_uri(), wait_selector="span.late", timeout=3000,
+                         page_action=lambda p: p.click("#more"))
+    assert page.css("span.late::text").get() == "늦게"
+
+
+def test_plain_dynamic_wait_selector_accepts_hidden_element(tmp_path):
+    """옛 기본값은 attached 다 — 숨은 요소(예: script#__NEXT_DATA__)도 기다릴 수 있어야 한다."""
+    html = tmp_path / "hidden.html"
+    html.write_text("<html><body><div id='hidden' style='display:none'>숨김</div></body></html>",
+                    encoding="utf-8")
+    page = plain_dynamic(html.as_uri(), wait_selector="#hidden", timeout=1500)
+    assert page.css("#hidden::text").get() == "숨김"
+
+
+def test_plain_dynamic_reports_final_document_status(local_site):
+    """page_action 이 다른 문서로 옮기면 status·헤더도 그 문서의 것이다 — 503 을 200 으로 보고하지 않는다."""
+    def _go(p):
+        with p.expect_navigation():
+            p.click("#go")
+
+    page = plain_dynamic(f"{local_site}/start", page_action=_go)
+    assert page.url.endswith("/error")
+    assert page.status == 503
+    assert page.headers.get("x-page") == "error"
+
+
+def test_plain_dynamic_keeps_full_cookie_records_and_set_cookie_header(local_site):
+    page = plain_dynamic(f"{local_site}/cookies")
+    paths = sorted(c["path"] for c in page.cookies if c["name"] == "sid")
+    assert paths == ["/", "/scope"]
+    assert "sid=" in (page.headers.get("set-cookie") or "")
 
 
 # F11 — 전화번호 패턴이 ID·URL 을 잡지 않는다

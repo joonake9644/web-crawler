@@ -72,9 +72,10 @@ fetcher 경로(0.5.1, 3.14, `from scrapling.fetchers import …`): `Fetcher`·`F
 | 분류표·프로필 | `plaindynamic` 키 추가. 프로필 3개 `fetcher_type` 을 `plain_dynamic` 으로. 옛 이름(`DynamicFetcher`·`DynamicSession`)은 매핑으로 계속 3단 |
 | 스킬 정본(HCG-055) | `SKILL.md`·`antibot-strategies.md`·`fetcher-patterns.md`·`troubleshooting.md` 에서 옛 이름 지시 제거. 사다리 B 체인은 `DynamicFetcher` 티어를 빼 브라우저 티어가 `StealthyFetcher` 하나. 통지 게이트·안전 문장은 그대로 |
 | preflight(3.14.7, 0.5.1) | CORE PASS 12 / FAIL 0 (「Fetcher 클래스 로드 — Fetcher/FetcherSession/StealthyFetcher + utils.plain_dynamic」) |
-| `pytest -q -k "not e2e"` | 3.14.7(작업트리 `.venv`)·3.11.15(`~/.cache/web-crawler-dep002/py311`) 모두 **676 통과**, 14 제외, 종료 0 |
+| `pytest -q -k "not e2e"` | 3.14.7(작업트리 `.venv`)·3.11.15(`~/.cache/web-crawler-dep002/py311`) 모두 **681 통과**, 14 제외, 종료 0 |
+| 독립 리뷰 지적 수정 | Codex·DeepSeek·Grok 이 공통으로 짚은 옛 3단과의 의미 차이를 고쳤다 — networkidle 이 끝나지 않아도 그린 문서 반환, `page_action` 뒤 `wait_selector`(attached), status·헤더는 마지막 메인 문서 응답(`all_headers()`), 쿠키는 전체 레코드 튜플. 실제 Chromium·로컬 HTTP 서버 시험 5건(먼저 RED 확인) |
 
-시험 수가 4절 범위 스위트(680 수집)보다 4 적은 이유: 문서에서 뽑는 매개변수 시험이 문서를 따라 바뀌었다 — 빠짐 5(열거 `DynamicFetcher`·`DynamicSession`, import `scrapling.fetchers.DynamicFetcher`·`DynamicSession`, 옛 스크롤 예제의 `import time`), 더함 1(열거 `plain_dynamic`). 수집 목록 전후 diff 로 확인했다.
+시험 수 변화: 스킬 문서 수정으로 문서에서 뽑는 매개변수 시험이 4 줄었다(680 → 676) — 빠짐 5(열거 `DynamicFetcher`·`DynamicSession`, import `scrapling.fetchers.DynamicFetcher`·`DynamicSession`, 옛 스크롤 예제의 `import time`), 더함 1(열거 `plain_dynamic`). 수집 목록 전후 diff 로 확인했다. 그 뒤 리뷰 지적 시험 5건을 더해 681 이다.
 
 남은 차이:
 
