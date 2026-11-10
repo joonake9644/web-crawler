@@ -40,7 +40,10 @@ def test_stealthy_session_reaches_rung_five():
 
 # ── ITEM 1: 저장소 문서가 이미 쓰는 이름들을 사다리가 인식하는가 ──
 @pytest.mark.parametrize("value,expected_rung", [
-    ("DynamicSession", 3),           # SKILL.md 무한 스크롤 절
+    ("plain_dynamic", 3),            # DEP-002: scrapling 0.5 뒤 3단의 이름(utils.plain_dynamic)
+    ("plain_get", 1),                # 같은 래퍼 계열 — 1단
+    ("plain_session", 2),            # 같은 래퍼 계열 — 2단
+    ("DynamicSession", 3),           # 옛 이름(scrapling 0.4) — 옛 프로필이 계속 3단으로 읽혀야 한다
     ("PlaywrightFetcher", 3),        # DynamicFetcher 의 옛 이름
     ("playwright_sync_api", 3),      # 절대 규칙 1 예외 문구
     ("Spider", 3),                   # CLAUDE.md 500건+ 권고

@@ -623,38 +623,144 @@ def test_dynamic_kwargs_disables_fabricated_referer():
     assert DYNAMIC_KWARGS["google_search"] is False
 
 
-def test_plain_dynamic_passes_google_search_false(monkeypatch):
-    captured = {}
+# DEP-002 — scrapling 0.5 는 DynamicFetcher(일반 Playwright 백엔드)를 없앴다. 남은 브라우저 백엔드는
+# 위장(patchright) StealthyFetcher 뿐이고 그건 이음매 아래 사다리 B 다. 3단은 playwright 를 직접 불러
+# 이음매 위에 남긴다.
 
-    class _FakeDynamicFetcher:
+class _FakeResponse:
+    status = 200
+    status_text = "OK"
+    headers = {"content-type": "text/html"}
+
+    class request:
+        headers = {"user-agent": "real-browser"}
+        method = "GET"
+
+
+class _FakePage:
+    def __init__(self, log):
+        self.log = log
+        self.url = "https://example.com/final"
+
+    def goto(self, url, **kw):
+        self.log["goto"] = (url, kw)
+        return _FakeResponse()
+
+    def wait_for_selector(self, selector, **kw):
+        self.log["wait_selector"] = (selector, kw)
+
+    def content(self):
+        return "<html><body><p class='v'>렌더됨</p></body></html>"
+
+
+class _FakeContext:
+    def __init__(self, log):
+        self.log = log
+
+    def new_page(self):
+        self.log["page"] = _FakePage(self.log)
+        return self.log["page"]
+
+    def cookies(self):
+        return [{"name": "sid", "value": "1"}]
+
+
+class _FakeBrowser:
+    def __init__(self, log):
+        self.log = log
+
+    def new_context(self, **kw):
+        self.log["context_kw"] = kw
+        return _FakeContext(self.log)
+
+    def close(self):
+        self.log["closed"] = True
+
+
+def _fake_sync_playwright(log):
+    class _Chromium:
         @staticmethod
-        def fetch(url, **kw):
-            captured["url"] = url
-            captured["kw"] = kw
-            return "response"
+        def launch(**kw):
+            log["launch"] = kw
+            return _FakeBrowser(log)
 
-    monkeypatch.setattr("scrapling.fetchers.DynamicFetcher", _FakeDynamicFetcher)
+    class _P:
+        chromium = _Chromium()
 
-    assert plain_dynamic("https://example.com", network_idle=True) == "response"
-    assert captured["url"] == "https://example.com"
-    assert captured["kw"]["google_search"] is False
-    assert captured["kw"]["network_idle"] is True
+    class _CM:
+        def __enter__(self):
+            return _P()
+
+        def __exit__(self, *exc):
+            log["exited"] = True
+            return False
+
+    return lambda: _CM()
 
 
-def test_plain_dynamic_allows_explicit_override(monkeypatch):
-    """명시적으로 켜는 것은 막지 않는다 — 기본값을 정할 뿐이다."""
-    captured = {}
+def _forbid_stealth(monkeypatch):
+    def _boom(*a, **k):
+        raise AssertionError("3단이 위장 백엔드(patchright)를 불렀다 — 이음매를 넘었다")
+    monkeypatch.setattr("patchright.sync_api.sync_playwright", _boom)
 
-    class _FakeDynamicFetcher:
-        @staticmethod
-        def fetch(url, **kw):
-            captured.update(kw)
-            return "response"
 
-    monkeypatch.setattr("scrapling.fetchers.DynamicFetcher", _FakeDynamicFetcher)
+def test_plain_dynamic_uses_plain_playwright_and_returns_scrapling_response(monkeypatch):
+    log = {}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    _forbid_stealth(monkeypatch)
+    actions = []
 
-    plain_dynamic("https://example.com", google_search=True)
-    assert captured["google_search"] is True
+    page = plain_dynamic("https://example.com", network_idle=True,
+                         page_action=lambda p: actions.append(p), wait_selector="p.v")
+
+    assert log["launch"]["headless"] is True
+    url, goto_kw = log["goto"]
+    assert url == "https://example.com"
+    assert goto_kw["wait_until"] == "networkidle"
+    assert "referer" not in {k.lower() for k in goto_kw}           # 출처를 지어내지 않는다
+    assert log["context_kw"].get("extra_http_headers") in (None, {})  # 위장 헤더 없음
+    assert log["wait_selector"][0] == "p.v"
+    assert actions == [log["page"]]
+    assert log["closed"] is True
+    assert page.status == 200
+    assert page.url == "https://example.com/final"
+    assert page.css("p.v::text").get() == "렌더됨"
+
+
+def test_plain_dynamic_waits_for_load_without_network_idle(monkeypatch):
+    log = {}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    plain_dynamic("https://example.com")
+    assert log["goto"][1]["wait_until"] == "load"
+
+
+def test_plain_dynamic_refuses_fabricated_referer(monkeypatch):
+    """google_search=True 는 Referer: https://www.google.com/ 를 지어내는 손잡이다 — 3단에서는 거부한다."""
+    log = {}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    with pytest.raises(ValueError, match="google_search"):
+        plain_dynamic("https://example.com", google_search=True)
+    assert "launch" not in log                                   # 브라우저를 띄우기 전에 거부
+
+
+def test_plain_dynamic_rejects_unknown_arguments(monkeypatch):
+    """옛 DynamicFetcher 인자(예: solve_cloudflare)를 조용히 버리지 않는다."""
+    log = {}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    with pytest.raises(TypeError):
+        plain_dynamic("https://example.com", solve_cloudflare=True)
+    assert "launch" not in log
+
+
+def test_plain_dynamic_renders_local_js_page(tmp_path):
+    """실제 Chromium 으로 JS 가 그린 요소를 읽는다(외부 네트워크 없음)."""
+    html = tmp_path / "page.html"
+    html.write_text(
+        "<html><body><div id='root'></div><script>"
+        "document.getElementById('root').innerHTML = \"<span class='item'>JS로 그림</span>\";"
+        "</script></body></html>", encoding="utf-8")
+    page = plain_dynamic(html.as_uri())
+    assert page.css("span.item::text").get() == "JS로 그림"
 
 
 # F11 — 전화번호 패턴이 ID·URL 을 잡지 않는다

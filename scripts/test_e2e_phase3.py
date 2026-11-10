@@ -1,4 +1,7 @@
-"""Phase 3 E2E 통합 테스트: DynamicFetcher + StealthyFetcher + 에스컬레이션"""
+"""Phase 3 E2E 통합 테스트: plain_dynamic(3단) + 에스컬레이션.
+
+scrapling 0.5 에서 DynamicFetcher 가 없어져 3단은 utils.plain_dynamic(playwright 직접 호출)이다(DEP-002).
+"""
 import json
 import os
 import sys
@@ -10,12 +13,13 @@ from datetime import datetime
 
 
 def test_e2e_dynamic_fetcher(tmp_path):
-    """DynamicFetcher로 JS 렌더링이 필요한 사이트를 수집하여 엑셀로 출력.
+    """plain_dynamic(3단)으로 JS 렌더링이 필요한 사이트를 수집하여 엑셀로 출력.
 
     quotes.toscrape.com/js/ 는 JavaScript로 데이터를 렌더링하는 버전.
-    일반 Fetcher로는 빈 페이지가 반환되고, DynamicFetcher로만 수집 가능.
+    일반 Fetcher로는 빈 페이지가 반환되고, 3단 브라우저 렌더링으로만 수집 가능.
     """
-    from scrapling.fetchers import Fetcher, DynamicFetcher
+    from scrapling.fetchers import Fetcher
+    from utils import plain_dynamic
 
     logger = setup_logger("e2e_phase3_dynamic")
     # 산출물은 tmp_path 아래로. 실제 output/ 에 쓰면 도메인별 폴더 규약을 어기고
@@ -23,15 +27,14 @@ def test_e2e_dynamic_fetcher(tmp_path):
     output_dir = str(tmp_path)
 
     # === Step 1: 일반 Fetcher로 실패 확인 ===
-    logger.info("=== Phase 3 E2E: DynamicFetcher (quotes.toscrape.com/js/) ===")
+    logger.info("=== Phase 3 E2E: plain_dynamic (quotes.toscrape.com/js/) ===")
     fetcher = Fetcher()
     page = fetcher.get("https://quotes.toscrape.com/js/")
     basic_quotes = page.css("div.quote")
     logger.info(f"Basic Fetcher found {len(basic_quotes)} quotes (expected 0 or few)")
 
-    # === Step 2: DynamicFetcher로 수집 ===
-    logger.info("Switching to DynamicFetcher for JS rendering...")
-    dynamic = DynamicFetcher()
+    # === Step 2: plain_dynamic 으로 수집 ===
+    logger.info("Switching to plain_dynamic for JS rendering...")
     limiter = RateLimiter(delay=1.5)
     results = []
     page_num = 1
@@ -42,7 +45,7 @@ def test_e2e_dynamic_fetcher(tmp_path):
         url = f"https://quotes.toscrape.com/js/page/{page_num}/"
         logger.info(f"Rendering page {page_num}: {url}")
 
-        page = dynamic.fetch(url, network_idle=True)
+        page = plain_dynamic(url, network_idle=True)
         if page.status != 200:
             logger.warning(f"Status {page.status}, stopping")
             break
@@ -70,9 +73,9 @@ def test_e2e_dynamic_fetcher(tmp_path):
     empty_authors = sum(1 for r in results if not r["저자"])
     assert empty_authors == 0, f"{empty_authors} empty authors"
 
-    # DynamicFetcher가 일반 Fetcher보다 더 많은 데이터를 가져왔는지 확인
+    # plain_dynamic 이 일반 Fetcher보다 더 많은 데이터를 가져왔는지 확인
     assert len(results) > len(basic_quotes), (
-        f"DynamicFetcher ({len(results)}) should find more than Fetcher ({len(basic_quotes)})"
+        f"plain_dynamic ({len(results)}) should find more than Fetcher ({len(basic_quotes)})"
     )
 
     logger.info(f"First: {results[0]}")
@@ -99,17 +102,15 @@ def test_e2e_dynamic_fetcher(tmp_path):
     assert ws.max_row >= 21  # header + 20+ rows
     logger.info(f"Excel saved: {excel_path} ({ws.max_row - 1} rows)")
 
-    logger.info("=== DynamicFetcher Test PASSED ===")
+    logger.info("=== plain_dynamic Test PASSED ===")
 
 
 def test_e2e_escalation_chain():
-    """에스컬레이션 체인: Fetcher 실패 → StealthyFetcher → DynamicFetcher 자동 전환.
+    """에스컬레이션 체인: plain_get → plain_session → plain_dynamic 자동 전환(사다리 A).
 
     quotes.toscrape.com/js/ 는 JS 렌더링 필요 → Fetcher 부분 실패 → 에스컬레이션.
     """
-    from scrapling.fetchers import DynamicFetcher
-
-    from utils import plain_get, plain_session
+    from utils import plain_dynamic, plain_get, plain_session
 
     logger = setup_logger("e2e_phase3_escalation")
 
@@ -121,7 +122,7 @@ def test_e2e_escalation_chain():
     FETCHER_CHAIN = [
         ("plain_get", plain_get),
         ("plain_session", _session_tier),
-        ("DynamicFetcher", lambda url: DynamicFetcher().fetch(url, network_idle=True)),
+        ("plain_dynamic", lambda url: plain_dynamic(url, network_idle=True)),
     ]
 
     def fetch_with_escalation(url: str):
@@ -155,7 +156,7 @@ def test_e2e_escalation_chain():
     assert used_fetcher is not None
     logger.info(f"Final fetcher used: {used_fetcher}")
 
-    # DynamicFetcher 또는 StealthyFetcher가 사용되었어야 함
+    # 3단(plain_dynamic)이 사용되었어야 함
     # (기본 Fetcher로는 JS 사이트 수집 불가능할 수 있음)
     quotes = page.css("div.quote")
     assert len(quotes) > 0, f"No quotes found even after escalation"

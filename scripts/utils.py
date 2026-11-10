@@ -413,16 +413,52 @@ def plain_session(**kw):
 DYNAMIC_KWARGS = {"google_search": False}
 
 
-def plain_dynamic(url: str, **kw):
+def plain_dynamic(url: str, *, network_idle: bool = False, page_action=None,
+                  wait_selector: str | None = None, headless: bool = True,
+                  timeout: int = 30_000, google_search: bool = DYNAMIC_KWARGS["google_search"]):
     """사다리 3단. JS 렌더링이 필요할 때 — 출처는 지어내지 않는다.
 
     `impersonate`/`stealthy_headers` 짝 강제는 여기 없다. 그건 HTTP 계층 인자이고
     3단은 브라우저가 스스로 헤더를 만든다. 여기서 끄는 것은 **조작된 Referer** 하나다.
+
+    scrapling 0.5 는 일반 Playwright 백엔드(DynamicFetcher)를 없앴다. 남은 브라우저 백엔드는
+    위장(patchright) StealthyFetcher 뿐인데, 그건 이음매 아래 사다리 B 라 통지 없이 쓰면 안 된다.
+    그래서 3단은 playwright 를 직접 불러 위장 없는 Chromium 으로 렌더하고, 결과만 지금까지와
+    같은 scrapling 응답(`.status`·`.css()`)으로 돌려준다(DEP-002). 모르는 인자는 시그니처가
+    `TypeError` 로 거부한다 — 옛 DynamicFetcher 인자를 조용히 버리지 않는다.
     """
-    for key, value in DYNAMIC_KWARGS.items():
-        kw.setdefault(key, value)
-    from scrapling.fetchers import DynamicFetcher  # lazy
-    return DynamicFetcher.fetch(url, **kw)
+    if google_search:
+        raise ValueError(
+            "google_search=True 는 Referer: https://www.google.com/ 를 지어낸다 — "
+            "사다리 A 3단에서는 쓰지 않는다(출처 조작 금지)")
+    from playwright.sync_api import sync_playwright  # lazy — 위장 없는 playwright
+    from scrapling.engines.toolbelt.custom import Response
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless)
+        try:
+            context = browser.new_context()
+            page = context.new_page()
+            response = page.goto(url, timeout=timeout,
+                                 wait_until="networkidle" if network_idle else "load")
+            if wait_selector:
+                page.wait_for_selector(wait_selector, timeout=timeout)
+            if page_action is not None:
+                page_action(page)
+            html = page.content()
+            cookies = {c["name"]: c["value"] for c in context.cookies()}
+            # file:// 처럼 HTTP 응답이 없는 탐색은 상태를 지어내지 않고 0 으로 둔다.
+            status = response.status if response is not None else 0
+            return Response(
+                url=page.url, content=html, status=status,
+                reason=response.status_text if response is not None else "",
+                cookies=cookies,
+                headers=dict(response.headers) if response is not None else {},
+                request_headers=dict(response.request.headers) if response is not None else {},
+                encoding="utf-8", method="GET",
+            )
+        finally:
+            browser.close()
 
 
 # ── robots.txt — 표지판이지 잠금장치가 아니지만, 무시했다는 사실은 정황이 된다 ──

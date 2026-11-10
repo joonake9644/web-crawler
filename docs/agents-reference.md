@@ -53,7 +53,7 @@ python scripts\preflight.py              # 검증: core / agent-browser 분리 P
 - **정찰 폴백 티어 (agent-browser를 못 쓸 때만).** 위에서부터 내려간다. 어느 티어를 썼는지 profile.json `notes`에 남긴다.
   - **폴백 1 (Claude): Claude in Chrome** (`mcp__claude-in-chrome__*`) — **Claude 계열 host 전용**(Claude Code / Cowork). 사용자의 실제 Chrome을 조종해서 **실제 쿠키·실제 IP**가 그대로 붙는 게 최대 장점. Step 2 정찰 항목 5개는 전부 대체된다(검증 완료). 단 네트워크 감시에 제약이 있으니 반드시 SKILL.md Step 2 "Claude in Chrome 폴백" 절차를 따를 것.
   - **폴백 1 (Codex): ChatGPT Chrome 플러그인 Browser Use** (`chrome:control-chrome`) — **Codex 세션에 Chrome 스킬이 있고 사용자의 ChatGPT Chrome 확장이 연결될 때만** 쓴다. 사용자의 실제 Chrome을 조종하므로 실제 브라우저 상태·세션·IP를 활용할 수 있다(쿠키·스토리지를 직접 읽지는 않는다). Step 2 정찰 항목 5개는 대체한다(2026-08-19 `books.toscrape.com` 실측). 단 일반 XHR/fetch 요청과 응답 헤더·본문을 직접 캡처하는 API는 없으므로, API 네트워크 감시가 필요하면 폴백 2의 Playwright `sync_api`를 네트워크 보조 수단으로 쓴다. 반드시 SKILL.md Step 2 "ChatGPT Chrome Browser Use 폴백" 절차를 따를 것. Chrome 확장이 연결되지 않으면 이 티어를 건너뛴다.
-  - **폴백 2 (공통): Scrapling `DynamicFetcher`** 또는 **Playwright `sync_api`**(`page.on("response")`로 XHR/API 캡처) — 양 host 공통, Python 의존성에 포함돼 항상 가능. (SKILL.md 규칙 1 예외와 동일.)
+  - **폴백 2 (공통): `utils.plain_dynamic`(3단, playwright 직접 호출)** 또는 **Playwright `sync_api`**(`page.on("response")`로 XHR/API 캡처) — 양 host 공통, Python 의존성에 포함돼 항상 가능. (SKILL.md 규칙 1 예외와 동일.)
   - **host별 경로를 섞지 않는다.** Claude Code/Cowork는 `agent-browser → Claude in Chrome → 폴백 2`, Codex는 `agent-browser → ChatGPT Chrome Browser Use(연결 시) → 폴백 2`다. Codex에서 Claude in Chrome을 찾지 않는다.
   어느 경우든 가능하면 `agent-browser.cmd install`로 표준 경로 복구를 먼저 시도한다.
 - **수집은 폴백 대상이 아니다.** Claude in Chrome과 ChatGPT Chrome Browser Use는 **정찰 전용**이다 — 브라우저에서 전량 추출하는 것은 절대 규칙 2 위반. 수집은 어떤 host에서든 `crawl_script.py`(Scrapling/Playwright)로 한다.

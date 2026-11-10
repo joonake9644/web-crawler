@@ -1,7 +1,7 @@
 {
   "domain": "data.seoul.go.kr",
   "capability": "js_render",
-  "fetcher_type": "DynamicFetcher",
+  "fetcher_type": "plain_dynamic",
   "antibot_type": "none",
   "antibot_strategy": "none",
   "site_type": "csr",
@@ -17,6 +17,6 @@
     "items_per_page": 10
   },
   "api_endpoints": [],
-  "notes": "서울 열린데이터광장 목록은 SSR이지만 검색 필터/정렬은 JS 후처리라 DynamicFetcher + network_idle=True 권장. 다운로드 수는 사이트에서 비공개 → sortColBy=D(다운로드순) 정렬 후 순위(rank)로 대체 수집. searchKeyword/sortColBy/pageIndex 3개 파라미터로 페이지네이션. 안티봇 없음.",
+  "notes": "서울 열린데이터광장 목록은 SSR이지만 검색 필터/정렬은 JS 후처리라 plain_dynamic(network_idle=True) 권장. 다운로드 수는 사이트에서 비공개 → sortColBy=D(다운로드순) 정렬 후 순위(rank)로 대체 수집. searchKeyword/sortColBy/pageIndex 3개 파라미터로 페이지네이션. 안티봇 없음.",
   "last_used": "2026-03-25"
 }

@@ -88,8 +88,11 @@ def check_imports():
 
 def check_fetchers():
     try:
-        from scrapling.fetchers import Fetcher, StealthyFetcher, DynamicFetcher  # noqa: F401
-        record("CORE", "PASS", "Fetcher 클래스 로드", "Fetcher/StealthyFetcher/DynamicFetcher")
+        # scrapling 0.5 는 DynamicFetcher 를 없앴다. 3단은 utils.plain_dynamic(playwright 직접 호출)이고
+        # 그 브라우저 실행은 아래 check_chromium_launch 가 확인한다(DEP-002).
+        from scrapling.fetchers import Fetcher, FetcherSession, StealthyFetcher  # noqa: F401
+        from utils import plain_dynamic  # noqa: F401
+        record("CORE", "PASS", "Fetcher 클래스 로드", "Fetcher/FetcherSession/StealthyFetcher + utils.plain_dynamic")
         return True
     except Exception as e:
         record("CORE", "FAIL", "Fetcher 클래스 로드", str(e).splitlines()[0][:80],
