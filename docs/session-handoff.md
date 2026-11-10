@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `56c6f7dc75c53186f212c3cd2df6f0027e52668fd709a6ad3ef0dcb7d2a95e57`
+- 입력 다이제스트: `fa7a51b35c7f8318cd2df203b4a6c2c08cb7465083a085749ba1c9058667554a`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `f226640` · 브랜치 `chore/dep-001`
+측정 시점 HEAD: `2a60a8a` · 브랜치 `chore/rev7-dep001-done`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- 2a60a8a Merge pull request #15 from joonake9644/chore/dep-001
+- e8a77bb chore(harness): DEP-001 세션 종료 기록 — 독립 리뷰 PASS, 인계서 갱신
 - f226640 docs(deps): 독립 리뷰 LOW 반영 — 사용처 목록·시험 수 시점·certifi 주석 정정, 갭·종료 분류 기록
 - 7605511 fix(deps): certifi 하한(GHSA-6q48-6c7w-9gw2)과 scrapling 0.5 비호환 판정 기록
 - 96435ea chore(plan): DEP-001 평가 문서 경로를 추적 예외에 추가
@@ -49,8 +51,6 @@
 - 1a5aa88 sec(intel): 2026-11 보안 인텔 재수집 요약과 조각 갭·종료 분류 (SECINTEL-001)
 - 1f24ae4 chore(slice): SECINTEL-001 조각 계약(보안 인텔 재수집, REV-5 과제 1)
 - e2f290f Merge pull request #12 from joonake9644/chore/rev5-secintel-dep
-- 478e1b3 chore(plan): REV-5 — 보안 인텔 재수집(SECINTEL-001)과 scrapling 0.5 평가(DEP-001)를 과제로 추가
-- df62c9a Merge pull request #11 from joonake9644/chore/rev4-sec001-done
 
 ## 남은 것 / 다음 세션
 
