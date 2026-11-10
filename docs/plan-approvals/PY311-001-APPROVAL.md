@@ -112,12 +112,12 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 | playwright · patchright | 제약 `>=1.62,<1.65`(바이트 동일, ADR-002), 로컬 1.62.0 · 1.62.3, 범위 안 최신 1.64.1 · 1.64.4, 둘 다 1.65 미출시 |
 | curl_cffi | 제약 `>=0.16`, 로컬 0.16.3, PyPI 최신 0.17.0(2026-10-26) |
 
-<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001 -->
+(REV-5 당시 순서 블록: SEC001-CLOSE,SECINTEL-001,DEP-001 — REV-7 에서 아래 순서 블록으로 넘겼다)
 
 - [x] SECINTEL-001: 보안 인텔 재수집 — 설치 의존성·런타임을 공개 취약점 데이터(OSV 등)와 다시 대조하고,
   `docs/security/intel-brief-2026-11-09.md`(공개 저장소라 결과 요약만)와 비공개 증거 폴더 상세 브리프를 남긴다.
   취약점이 나오면 고치지 않고 등급·영향 경로·고칠 과제를 보고한다(수정은 사용자 승인으로 새 과제). 근거: 전역 스킬 `security-program`, `docs/security/SCOPE.md`.
-- [ ] DEP-001: scrapling 0.5 호환 평가와 런타임 범위 안 갱신 — 0.5 의 바뀐 점을 원문(변경 기록·릴리스 노트)으로 확인하고,
+- [x] DEP-001: scrapling 0.5 호환 평가와 런타임 범위 안 갱신 — 0.5 의 바뀐 점을 원문(변경 기록·릴리스 노트)으로 확인하고,
   0.5.1 을 따로 만든 환경(3.14 로컬·3.11 CI 판)에 설치해 스위트와 이 저장소가 쓰는 fetcher 경로를 돌린다. 결과에 따라 상한을 옮기거나(TDD: 상한 검사 먼저 RED)
   `<0.5` 유지 근거를 기록한다. 같은 과제에서 로컬 venv 를 허용 범위 안 최신(playwright·patchright 1.64.x, curl_cffi 0.17.x)으로 맞추되
   playwright·patchright 제약식의 바이트 동일(ADR-002)은 깨지 않는다.
@@ -128,7 +128,7 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 
 ## REV-6 — SECINTEL-001 완료 표시와 DEP-001 에 certifi 하한 추가 (2026-11-10)
 
-<!-- ADR-BASIS:carry-forward REV-5 sha256:1c334bbd01c035cf91df1361b1668f474ca34890e1e73a67988c39d4471910fa -->
+(REV-6 당시 ADR 기준점 계승 표지: REV-5 sha256 1c334bbd01c035cf91df1361b1668f474ca34890e1e73a67988c39d4471910fa — REV-7 에서 아래 표지로 넘겼다)
 
 **사유**: ① 조각 SECINTEL-001 이 닫혔는데(사용자 입력 `290a5db2c3f7` 「SECINTEL-001 종료 승인」, PR #13 병합 `99218be`) REV-5 과제 줄이
 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. ② 그 조각이 찾은 취약점(간접 의존 certifi 2026.7.22,
@@ -148,3 +148,43 @@ DEP-001 에 더하는 범위(REV-5 의 DEP-001 문장은 그대로 두고 아래
 - 로컬 venv 의 certifi 를 그 하한 이상으로 갱신하고, OSV 일괄 조회로 설치본 취약점 0건을 다시 확인한다.
 
 DEP-001 완료 판정에 더한다: `scripts/test_requirements.py` 의 certifi 하한 검사 통과, 갱신 뒤 OSV 일괄 조회에서 certifi 권고 0건.
+
+## REV-7 — DEP-001 완료 표시와 scrapling 0.5 판 올림 과제 추가 (2026-11-10)
+
+<!-- ADR-BASIS:carry-forward REV-6 sha256:9908100761ae5dc12b99252f44569f8415e95e31ee6825a4b44d884f684320e7 -->
+
+**사유**: ① 조각 DEP-001 이 닫혔는데(사용자 입력 `723efaff5977` 「DEP-001 종료 승인」, PR #15 병합 `2a60a8a`) REV-5 과제 줄이
+`[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. ② 그 조각이 scrapling 0.5 를 비호환으로 판정했고(상한 `<0.5` 유지),
+사용자가 판 올림을 다음 과제로 정했다(입력 「DEP-001 완료 표시하고 scrapling 0.5 판 올림 과제를 넣는 REV-7 개정안 만들어」, 2026-11-10).
+
+**REV-1~REV-6 의 범위·완료 기준은 바꾸지 않는다.** 바뀐 줄은 세 줄뿐이다: DEP-001 과제 줄의 `[ ]` → `[x]`, REV-5 순서 블록과
+REV-6 계승 표지를 설명 문장으로 바꾼 것(순서 블록과 계승 표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다). 완료된 과제는 순서에 그대로 둔다.
+
+DEP-001 완료 근거(실측): 평가 `docs/reference/scrapling-0.5-compat-2026-11.md`, `requirements.txt` `certifi>=2026.10.19`·scrapling `<0.5` 유지 근거,
+`plan slice close` 검사 7건 통과·종료 분류 4칸 0, 실행 계약 6종과 3.11 `pytest -q -k "not e2e"` exit 0(675 passed), 독립 리뷰 3명 PASS,
+OSV 설치본 30개 권고 0건.
+
+출발 실측(2026-11-10, DEP-001 평가 문서·`git grep`):
+
+| 무엇 | 실측 |
+|:-----|:-----|
+| scrapling | 제약 `>=0.4.8,<0.5`, 로컬 0.4.15, PyPI 최신 0.5.1(2026-11-04) |
+| 0.5 에서 깨지는 곳 | 코드 import `scripts/utils.py:424`(`plain_dynamic`)·`scripts/preflight.py:91`, 0.5.1 시험 4건 실패(3.14·3.11 같음) |
+| 이름만 쓰는 곳 | `scripts/profile_policy.py`·`scripts/domain_profile.py`(분류표), 스킬 정본 `.claude/skills/web-crawler/`(SKILL.md·references 3개), `scripts/scrapling_reference.md`, `README.md`, `docs/agents-reference.md`, `docs/crawl-reference.md`, 프로필 3개(`fetcher_type` 2개·notes 1개) |
+| 사다리 위치 | `dynamicfetcher`·`dynamicsession` = 사다리 A 3단 `js_render`(이음매 위). `StealthyFetcher` 는 이음매 아래 사다리 B(통지 게이트 대상) |
+
+<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002 -->
+
+- [ ] DEP-002: scrapling 0.5 판 올림 — 0.5 에서 없어진 `DynamicFetcher`·`DynamicSession` 경로를 옮기고 상한을 `>=0.5.1,<0.6` 으로 올린다.
+  먼저 사다리 3단 대체 설계(아래 불변 조건을 지키는 방법)를 조각 계약에 적어 사용자 승인을 받는다. 그다음 TDD 로 상한 검사(`test_scrapling_has_upper_bound`)를
+  먼저 RED 로 바꾸고, 코드(`plain_dynamic`·`preflight`·분류표)·시험·스킬 정본 문서(미러는 `sync_codex_mirror.py` 로 재생성)·참조 문서·프로필을 옮긴다.
+  옛 프로필이 쓰는 옛 이름(`DynamicFetcher` 등)은 `profile_policy.py` 의 옛 이름 매핑으로 계속 읽는다.
+
+불변 조건: 사다리 3단(일반 JS 렌더)은 **이음매 위에 남는다** — 3단을 `StealthyFetcher`(위장 백엔드)로 바꿔 통지 게이트 없이 이음매를 넘지 않는다
+(`AGENTS.md` 「안전 — 하드룰」 첫 줄). playwright·patchright 제약식 바이트 동일(ADR-002)과 상한 `<1.65` 는 그대로다.
+
+완료 판정(검사 명령): 실행 계약 6종 exit 0, 3.11 환경 `pytest -q -k "not e2e"` exit 0, scrapling 0.5.x 설치 환경에서 `scripts/preflight.py` CORE FAIL 0,
+코드·스킬 정본·문서에서 `from scrapling.fetchers import DynamicFetcher`·`DynamicSession` 0건(옛 이름 매핑 제외).
+
+하지 않는 것: scrapling 0.5 새 기능(`RemoteSession`·`record_requests`·`pierce_shadow` 등) 도입, playwright·patchright 상한 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
+스킬 정본 `.claude/skills/web-crawler/` 수정이 전역 관문(HCG) 대상이면 관문 보고와 승인을 거친다.
