@@ -96,40 +96,43 @@ page = fetcher.fetch("https://example.com", headless=True, solve_cloudflare=True
 
 ---
 
-## 3. DynamicFetcher (브라우저 렌더링)
+## 3. plain_dynamic (브라우저 렌더링, 사다리 A 3단)
 
-Playwright 기반 브라우저 렌더링. JS 렌더링이 필요한 CSR 사이트에 적합.
+scrapling 0.5 는 일반 Playwright 백엔드(`DynamicFetcher`·`DynamicSession`)를 없앴다. 남은 브라우저
+백엔드 `StealthyFetcher` 는 위장(patchright) 백엔드라 이음매 아래 사다리 B 다. 그래서 3단은
+`scripts/utils.py` 의 `plain_dynamic()` 이 playwright 를 직접 불러 위장 없이 렌더하고, 결과를
+scrapling 응답(`.status`·`.css()`)으로 돌려준다(DEP-002).
 
 ```python
-from scrapling.fetchers import DynamicFetcher
+from utils import plain_dynamic
 
-fetcher = DynamicFetcher()
-page = fetcher.fetch("https://example.com", network_idle=True)
+page = plain_dynamic("https://example.com", network_idle=True)
 ```
 
-### 파라미터
+### 파라미터(이것만 받는다 — 그 밖의 인자는 `TypeError`)
 
-- `network_idle=True` — 네트워크 요청이 안정될 때까지 대기 (추천)
+- `network_idle=True` — 네트워크 요청이 안정될 때까지 대기 (추천). `load` 뒤에도 끝나지 않는 요청(분석·롱폴링)이 있으면 `timeout` 뒤 그린 문서를 그대로 돌려준다(실패로 치지 않음)
+- `page_action=<함수>` — 로드 뒤 playwright `page` 를 받아 클릭·스크롤 같은 조작
+- `wait_selector="..."` — `page_action` **다음에**, 이 선택자가 DOM 에 붙을 때까지(`attached`, 숨은 요소 포함) 대기
+- `timeout=30000` — 밀리초
 - `headless=True` — GUI 없이 실행
+- `google_search=True` 는 가짜 `Referer` 를 붙이는 손잡이라 거부한다
 
----
+반환값: `.status`·`.reason`·`.headers`(`set-cookie` 포함)는 `page_action` 뒤 **마지막 메인 문서 응답**에서, `.cookies` 는 브라우저 쿠키 전체 레코드의 튜플(`name`·`value`·`domain`·`path` …)이다 — status·쿠키는 옛 3단(scrapling 0.4 `DynamicFetcher`)과 같고, 헤더는 옛 3단(첫 응답)과 달리 status 와 같은 마지막 응답에서 읽는다.
 
-## 4. DynamicSession (Infinite Scroll)
+## 4. 무한 스크롤(옛 DynamicSession 자리)
 
-브라우저 세션을 유지하며 스크롤, 클릭 등 상호작용 가능.
+한 브라우저 안에서 스크롤하려면 `page_action` 을 쓴다.
 
 ```python
-from scrapling.fetchers import DynamicSession
+from utils import plain_dynamic
 
-with DynamicSession(headless=True) as session:
-    page = session.fetch("https://example.com", network_idle=True)
+def scroll(page):
+    for _ in range(5):
+        page.mouse.wheel(0, 4000)
+        page.wait_for_timeout(1500)
 
-    # 스크롤
-    session.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-
-    # 재렌더링 대기 후 재파싱
-    import time; time.sleep(2)
-    page = session.fetch("https://example.com", network_idle=True)
+page = plain_dynamic("https://example.com", network_idle=True, page_action=scroll)
 ```
 
 ---
@@ -279,7 +282,7 @@ API 발견? ──Yes──→ FetcherSession (가장 빠르고 안정적)
    │
    No
    │
-JS 렌더링 필요? ──Yes──→ DynamicFetcher (Playwright 브라우저 렌더링)
+JS 렌더링 필요? ──Yes──→ plain_dynamic (Playwright 브라우저 렌더링)
    │
    No
    │
@@ -295,7 +298,7 @@ plain_get (1단 — 위장 없는 평문 HTTP)
 자동 전환은 **사다리 A(1~3단)에서 끝난다:**
 
 ```
-plain_get → plain_session → DynamicFetcher
+plain_get → plain_session → plain_dynamic
   1단 정적    2단 숨은 API    3단 JS 렌더링
 ```
 

@@ -175,7 +175,7 @@ python -m venv .venv && . .venv/bin/activate && python scripts/bootstrap.py
 | 도구                                  | 역할                                                                                                            | 설치                                                                 |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | **Scrapling** (`[fetchers]`)  | 데이터 수집 (HTTP·브라우저, 셀렉터 자가치유). fetcher 런타임(curl_cffi/playwright/patchright 등)이 함께 들어옴 | `pip install -r requirements.txt`                                  |
-| **Chromium**                    | 브라우저 렌더링(DynamicFetcher/StealthyFetcher)                                                                 | `scrapling install` (playwright Chromium 1회 다운로드)             |
+| **Chromium**                    | 브라우저 렌더링(plain_dynamic/StealthyFetcher)                                                                 | `scrapling install` (playwright Chromium 1회 다운로드)             |
 | **openpyxl**                    | 엑셀(.xlsx) 출력                                                                                                | (requirements.txt에 포함)                                            |
 | **agent-browser**               | **표준 정찰 도구** — 구조 파악·네트워크 감시 (양 host 공통)                                             | `npm.cmd install -g agent-browser` + `agent-browser.cmd install` |
 | **Chrome / Chrome for Testing** | 브라우저 세션이 필요한 사이트 대응 (CDP)                                                                        | `agent-browser install` 이 함께 처리                               |
@@ -207,7 +207,7 @@ python -m venv .venv && . .venv/bin/activate && python scripts/bootstrap.py
 
 ```
 [자동]  API 발견?       → plain_session (숨은 API — 가장 빠름)
-        JS 렌더링 필요? → DynamicFetcher (브라우저 렌더링)
+        JS 렌더링 필요? → plain_dynamic (브라우저 렌더링)
         그 외           → plain_get (기본 HTTP, 위장 없음)
    │
    │ 위 셋이 다 막히면 = 사이트가 자동 접근을 거절하고 있다는 뜻
@@ -220,7 +220,7 @@ python -m venv .venv && . .venv/bin/activate && python scripts/bootstrap.py
            Akamai/고급 WAF   : Chrome CDP (앞 단계 건너뜀)
 ```
 
-수집이 실패하면 가벼운 방법부터 차례로 자동 전환합니다(`plain_get → plain_session → DynamicFetcher`). 여기까지는 사이트가 나를 막은 상황이 아닙니다. 데이터가 놓여 있는 위치만 다를 뿐이므로 묻지 않고 자동으로 진행합니다.
+수집이 실패하면 가벼운 방법부터 차례로 자동 전환합니다(`plain_get → plain_session → plain_dynamic`). 여기까지는 사이트가 나를 막은 상황이 아닙니다. 데이터가 놓여 있는 위치만 다를 뿐이므로 묻지 않고 자동으로 진행합니다.
 
 **그 위부터는 자동으로 넘어가지 않습니다.** 사이트가 자동 접근을 차단하고 있다면(봇 탐지·WAF·CAPTCHA), 에이전트가 한 번 알리고 진행 여부를 묻습니다. '진행' 을 고르면 그대로 진행하고 그 선택은 도메인 프로필에 기록됩니다. 근거를 제출받거나 검증하지 않습니다. 그 프로필이 그 기록을 들고 있는 동안은 다시 묻지 않습니다.
 

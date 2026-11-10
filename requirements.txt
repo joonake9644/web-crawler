@@ -16,10 +16,11 @@
 
 # 수집 엔진 + fetcher 런타임 일괄(click, curl_cffi, playwright, patchright, browserforge,
 # msgspec, anyio, apify-fingerprint-datapoints). pre-1.0 · v0.3 breaking 전력 → 상한 필수.
-# <0.5 유지 근거(DEP-001, 2026-11-10 실측): 0.5 는 일반 Playwright 백엔드를 없애
-# DynamicFetcher·DynamicSession 이 사라졌다. scripts/utils.py·scripts/preflight.py 와 스킬 문서가
-# 그 이름을 쓰므로 0.5.1 에서 3.14·3.11 모두 4건 실패한다. 상세: docs/reference/scrapling-0.5-compat-2026-11.md
-scrapling[fetchers]>=0.4.8,<0.5
+# 0.5 는 일반 Playwright 백엔드(DynamicFetcher·DynamicSession)를 없앴다(DEP-001 판정). DEP-002 에서
+# 사다리 3단 plain_dynamic 을 playwright 직접 호출로 옮기고 0.5.1 로 올렸다 — 3단은 위장 백엔드
+# (StealthyFetcher)로 바꾸지 않는다. 하한 0.5.1 은 0.4 경로가 섞이는 것을 막는다.
+# 상세: docs/reference/scrapling-0.5-compat-2026-11.md
+scrapling[fetchers]>=0.5.1,<0.6
 
 # 아래 셋은 scrapling[fetchers] 의 전이 의존이지만, 우리 코드가 '직접' import 하므로
 # 직접 선언해 버전 통제권을 가져온다. 하한은 2026-08-20 실측 설치본 기준.

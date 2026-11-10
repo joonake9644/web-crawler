@@ -9,19 +9,19 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `fa7a51b35c7f8318cd2df203b4a6c2c08cb7465083a085749ba1c9058667554a`
+- 입력 다이제스트: `f44c26cdb6a53daf93be688eb0a8871b516144b5af7fbc7d2eafb0bb6a759c27`
 
 ## 상태 한 줄 요약
 
 - 활성 작업: **PY311-001** — 계약 `docs/task-contracts/PY311-001.md`
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `VERIFY` / dirty=`False`
-- 검증 커밋: `f226640`
+- 검증 커밋: `5fc20cb`
 - 작업 도구: **codex/gpt-6.1-sol (reasoning high) · opencode-go/deepseek-v4.1-flash#max · grok-4.7 (xhigh)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `2a60a8a` · 브랜치 `chore/rev7-dep001-done`
+측정 시점 HEAD: `5fc20cb` · 브랜치 `chore/dep-002`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 675 passed, 14 deselected, 2 warnings |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 681 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,18 +39,18 @@
 
 ## 이번 세션에 한 일
 
+- 5fc20cb docs(utils): plain_dynamic 헤더 출처 설명 정정 — 옛 3단은 첫 응답, 새 3단은 마지막 응답 (재확인 리뷰 LOW)
+- 5fdf87b fix(utils): plain_dynamic 을 옛 3단 의미에 맞춤 — networkidle·대기 순서·최종 응답·쿠키 (독립 리뷰)
+- be397b9 docs(skill): scrapling 0.5 — 스킬 정본의 DynamicFetcher 지시를 plain_dynamic 으로 옮김 (HCG-055)
+- 8ff7933 feat(deps): scrapling 0.5.1 — 사다리 3단 plain_dynamic 을 playwright 직접 호출로 이관
+- 3720e8d chore(plan): DEP-002 조각 계약 — scrapling 0.5.1 판 올림과 사다리 3단 대체 설계
+- 43d8df6 Merge pull request #16 from joonake9644/chore/rev7-dep001-done
+- 9c60685 chore(plan): REV-7 — DEP-001 완료 표시와 DEP-002(scrapling 0.5 판 올림) 추가
 - 2a60a8a Merge pull request #15 from joonake9644/chore/dep-001
 - e8a77bb chore(harness): DEP-001 세션 종료 기록 — 독립 리뷰 PASS, 인계서 갱신
 - f226640 docs(deps): 독립 리뷰 LOW 반영 — 사용처 목록·시험 수 시점·certifi 주석 정정, 갭·종료 분류 기록
 - 7605511 fix(deps): certifi 하한(GHSA-6q48-6c7w-9gw2)과 scrapling 0.5 비호환 판정 기록
 - 96435ea chore(plan): DEP-001 평가 문서 경로를 추적 예외에 추가
-- a01078c chore(plan): DEP-001 조각 계약 — scrapling 0.5 호환 판정·런타임 갱신·certifi 하한
-- d2fe4de Merge pull request #14 from joonake9644/chore/rev6-dep001-certifi
-- af12e73 chore(plan): REV-6 — SECINTEL-001 완료 표시와 DEP-001 에 certifi 하한 추가
-- 99218be Merge pull request #13 from joonake9644/chore/secintel-001
-- 1a5aa88 sec(intel): 2026-11 보안 인텔 재수집 요약과 조각 갭·종료 분류 (SECINTEL-001)
-- 1f24ae4 chore(slice): SECINTEL-001 조각 계약(보안 인텔 재수집, REV-5 과제 1)
-- e2f290f Merge pull request #12 from joonake9644/chore/rev5-secintel-dep
 
 ## 남은 것 / 다음 세션
 

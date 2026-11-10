@@ -63,8 +63,11 @@ TOOLS: dict[str, tuple[int, str | None, bool]] = {
     "api":                    (2, "api", False),
 
     # ── 사다리 A 3단: JS 렌더링 ──
+    # scrapling 0.5 뒤의 3단 이름. utils.plain_dynamic 이 playwright 를 직접 불러 위장 없이 렌더한다(DEP-002).
+    "plaindynamic":           (3, "js_render", False),
+    # 아래 셋은 scrapling 0.4 의 옛 이름이다 — 0.5 에서 클래스는 없어졌지만 옛 프로필이 계속 3단으로 읽혀야 한다.
     "dynamicfetcher":         (3, "js_render", False),
-    "dynamicsession":         (3, "js_render", False),   # SKILL.md 무한 스크롤 절
+    "dynamicsession":         (3, "js_render", False),   # 옛 SKILL.md 무한 스크롤 절
     "playwrightfetcher":      (3, "js_render", False),   # DynamicFetcher 의 옛 이름 — 옛 프로필/문서가 아직 쓴다
     "playwright":             (3, "session", False),
     "playwrightspaintercept": (3, "session", False),

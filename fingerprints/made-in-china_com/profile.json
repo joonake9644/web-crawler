@@ -19,6 +19,6 @@
     "page_starts_at": 1
   },
   "api_endpoints": [],
-  "notes": "정적 HTML — 기본 Fetcher로 충분. DynamicFetcher는 fallback으로만. Main Products / City/Province는 .tr-box 안 .subject(키) + .td-des(값) 페어로 동적 정렬되므로 키 텍스트로 매칭해서 추출. User-Agent에 일반 Chrome UA 박는 게 안전. delay 1.5s.",
+  "notes": "정적 HTML — 기본 Fetcher로 충분. plain_dynamic(3단)은 fallback으로만. Main Products / City/Province는 .tr-box 안 .subject(키) + .td-des(값) 페어로 동적 정렬되므로 키 텍스트로 매칭해서 추출. User-Agent에 일반 Chrome UA 박는 게 안전. delay 1.5s.",
   "last_used": "2026-04-14"
 }

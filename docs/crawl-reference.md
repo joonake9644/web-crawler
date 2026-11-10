@@ -88,7 +88,7 @@ if profile_mgr.exists(domain):
 profile_mgr.save(domain, {
     "domain": domain,
     "capability": "<static|js_render|api|session>",   # ★ SSOT — 능력 수준. 비워 두면 save() 가 fetcher_type 에서 채운다
-    "fetcher_type": "<yt-dlp|RSS|oEmbed|Jina|Fetcher|FetcherSession|DynamicFetcher|DynamicSession|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION>",   # 파생 — 현재 엔진에서의 구현체. 앞 4개는 Phase 0 공인 우회로
+    "fetcher_type": "<yt-dlp|RSS|oEmbed|Jina|Fetcher|FetcherSession|plain_dynamic|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION>",   # 파생 — 현재 엔진에서의 구현체. 앞 4개는 Phase 0 공인 우회로
     "antibot_type": "<none|cloudflare|akamai|spa_session|naver_antibot|other>",
     "antibot_strategy": "<none|playwright_intercept|impersonate|curl_cffi_grid|stealthy|chrome_cdp|naver_antibot|authenticated_browser>",   # 실제로 쓴 대응. 사다리 B 를 썼으면 반드시 그 값을 적는다
     "site_type": "<static|csr|api|spa_session|akamai|api_direct|csr_api|html_endpoint|static_html>",   # 기술 서술용 상세 라벨 — 거친 능력 신호는 capability 가 SSOT 다
@@ -159,7 +159,7 @@ python scripts/sync_domain_list.py --check  # 어긋나면 exit 1
 |------|------|------|
 | **도메인 히스토리 조회/저장** | **DomainProfile (`scripts/domain_profile.py`)** | **재정찰 비용 회피 — 절대 규칙 0** |
 | 사이트 열어서 구조 파악 | agent-browser | 시각적 확인, 네트워크 감시 가능 |
-| 〃 — agent-browser 불가 시 | Claude in Chrome(Claude) / ChatGPT Chrome Browser Use(Codex, 연결 시) → DynamicFetcher/Playwright | host별 폴백 티어. 어느 티어를 썼는지 profile `notes`에 기록 |
+| 〃 — agent-browser 불가 시 | Claude in Chrome(Claude) / ChatGPT Chrome Browser Use(Codex, 연결 시) → plain_dynamic/Playwright | host별 폴백 티어. 어느 티어를 썼는지 profile `notes`에 기록 |
 | 수동 로그인 + 쿠키/JWT 추출 | agent-browser | 사용자 상호작용 필요 |
 | 대량 데이터 수집 | Scrapling | 빠름, Fetcher 계층, 자가 치유 |
 | 브라우저 세션이 필요한 사이트 대응 — **통지 이후** | Chrome CDP (`scripts/chrome_cdp.py`) | 4·5단이 원리적으로 안 통함 |
@@ -202,7 +202,7 @@ Phase 0: 공인 우회로 있나? ──Yes──→ yt-dlp / RSS·Atom / oEmbed
 
 > **에스컬레이션 순서 = 가벼운 것부터.** 자동 체인은 `plain_get → plain_session → plain_dynamic` 으로 **사다리 A 에서 끝난다.** 그 위(`curl_cffi 그리드` · `StealthyFetcher` · `Chrome CDP`)는 능력으로 전부 남아 있되 **통지 이후에** 진입한다. Akamai 는 4·5 단이 원리적으로 안 통해 통지 후 바로 6단이다. 상세 코드는 `references/fetcher-patterns.md § F`, capability 판정 근거는 `references/antibot-strategies.md § WAF capability 라우팅`.
 
-> **세 단 모두 래퍼를 쓴다.** 맨 `Fetcher.get()`/`FetcherSession()` 은 기본이 `impersonate="chrome"` + `stealthy_headers=True` 라 평문이 아니고, 맨 `DynamicFetcher.fetch()` 는 `google_search=True` 라 **`Referer: https://www.google.com/` 를 지어내 붙인다.** 사다리 A 는 통지 없이 도는 칸이므로 셋 다 끈 상태가 기본이다 — `plain_get()` · `plain_session()` · `plain_dynamic()`. (`fetcher_type` 에 기록하는 **어휘**는 그대로 `Fetcher`/`FetcherSession`/`DynamicFetcher` 다 — 래퍼 이름이 아니라 구현체 이름을 적는다.)
+> **세 단 모두 래퍼를 쓴다.** 맨 `Fetcher.get()`/`FetcherSession()` 은 기본이 `impersonate="chrome"` + `stealthy_headers=True` 라 평문이 아니고, scrapling 0.4 의 맨 `DynamicFetcher.fetch()` 는 `google_search=True` 라 **`Referer: https://www.google.com/` 를 지어내 붙였다**(0.5 에서 클래스가 없어졌고, `plain_dynamic()` 은 `google_search=True` 를 거부한다). 사다리 A 는 통지 없이 도는 칸이므로 셋 다 끈 상태가 기본이다 — `plain_get()` · `plain_session()` · `plain_dynamic()`. (`fetcher_type` 에 기록하는 **어휘**는 `Fetcher`/`FetcherSession`/`plain_dynamic` 이다. 1·2단은 구현체 이름을 적고, 3단은 scrapling 0.5 에서 구현체가 scrapling 클래스가 아니라 이 래퍼(playwright 직접 호출)라 래퍼 이름을 적는다. 옛 프로필의 `DynamicFetcher`·`DynamicSession` 은 옛 이름으로 계속 3단으로 읽힌다 — DEP-002.)
 
 > profile.json이 있는 도메인은 Akamai 탐지 시그널을 따로 안 봐도 `antibot_type` 필드로 즉시 판정된다 (`antibot_type: akamai` → `chrome_cdp` 직행). 단 그 직행도 이음매 뒤에 있다 — 이미 `consent` 기록이 있으면 통지 없음, 기록이 없으면 이번이 최초 통과이므로 그대로 통지한다.
 
@@ -238,7 +238,7 @@ chrome.exe --remote-debugging-port=9222 \
 ## Infinite Scroll 처리 (우선순위)
 
 1. **API 직행**: 정찰 시 infinite scroll의 underlying API 엔드포인트 발견 → `plain_session()`으로 직접 호출 (가장 빠르고 안정적). 맨 `FetcherSession()`은 기본값이 `impersonate="chrome"` + `stealthy_headers=True` 라 사다리 2단이 아니다
-2. **렌더 스크롤**: API 없으면 `DynamicSession(headless=True, google_search=False)`으로 스크롤 → `network_idle=True` 대기 → 추출 반복. 세션 쪽에는 래퍼가 없으므로 `google_search=False`를 직접 넘긴다 (기본값 `True`는 가짜 Google Referer를 붙인다)
+2. **렌더 스크롤**: API 없으면 `plain_dynamic(url, network_idle=True, page_action=<스크롤 함수>)` 로 한 브라우저 안에서 스크롤 → 대기 → `page.content()` 기준 추출. `page_action` 은 playwright `page` 를 받아 `page.mouse.wheel(...)`·`page.wait_for_timeout(...)` 을 반복한다(가짜 Referer 없음, scrapling 0.5 에서 `DynamicSession` 은 없어졌다)
 3. **agent-browser 폴백**: 위 둘 다 실패 시 agent-browser로 수동 스크롤 → DOM 추출 → Scrapling Selector로 파싱
 
 ## Fetcher 에스컬레이션
@@ -266,7 +266,7 @@ chrome.exe --remote-debugging-port=9222 \
 | Cloudflare Challenge | 통지 게이트를 거친 뒤 `StealthyFetcher(solve_cloudflare=True)` (5단) |
 | 셀렉터 매칭 실패 | `adaptive=True`로 자가 치유 시도. 재실패 시 정찰 재실행 |
 | 페이지 구조 완전 변경 | 정찰 재실행 → profile.json의 selectors 갱신 |
-| JS 렌더링 실패 | DynamicFetcher로 에스컬레이션. `disable_resources=True`로 경량화 |
+| JS 렌더링 실패 | `plain_dynamic`(3단)으로 에스컬레이션. 받는 인자는 `network_idle`·`page_action`·`wait_selector`·`timeout`·`headless` 뿐이다 |
 | 네트워크 타임아웃 | 3회 재시도 후 해당 페이지 스킵 + 로그 |
 | **수집 데이터 0건** | **즉시 중단, 사용자 보고** (계속 시도하면 ban 위험) |
 | Spider 중단 (Ctrl+C) | `crawldir`에서 자동 체크포인트, 재실행 시 이어서 수집 |

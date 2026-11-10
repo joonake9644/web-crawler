@@ -111,6 +111,7 @@ def test_capability_inferred_from_fetcher_type():
     assert infer_capability({"fetcher_type": "Fetcher"}) == "static"
     assert infer_capability({"fetcher_type": "FetcherSession"}) == "api"
     assert infer_capability({"fetcher_type": "DynamicFetcher"}) == "js_render"
+    assert infer_capability({"fetcher_type": "plain_dynamic"}) == "js_render"   # DEP-002 새 이름
     assert infer_capability({"fetcher_type": "playwright_spa_intercept"}) == "session"
     assert infer_capability({"fetcher_type": "chrome_cdp"}) == "session"
 

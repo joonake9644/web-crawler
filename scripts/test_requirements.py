@@ -207,9 +207,17 @@ def test_coupling_comment_states_actual_range():
 
 
 def test_scrapling_has_upper_bound():
-    """pre-1.0 이고 v0.3 breaking 전력이 있어 상한이 필수다."""
-    assert "<0.5" in _declared()["scrapling"], (
-        "scrapling 에 상한(<0.5)이 없습니다 — 0.5 가 나오면 생성 스크립트가 일괄로 깨집니다"
+    """pre-1.0 이고 v0.3·v0.5 breaking 전력이 있어 상한이 필수다(DEP-002: 0.5 로 올림).
+
+    0.5 는 DynamicFetcher 를 없앴다 — 하한도 0.5.1 로 둬서 0.4 와 0.5 가 섞인 venv 를 막는다.
+    """
+    constraint = _constraint("scrapling")
+    assert _version_upper_bound(constraint) == "0.6", (
+        f"scrapling 상한이 <0.6 이 아닙니다 (제약식={constraint!r}) — 0.6 이 나오면 생성 스크립트가 일괄로 깨질 수 있습니다"
+    )
+    lower = re.search(r">=\s*(\d+(?:\.\d+)*)", constraint)
+    assert lower and _release(lower.group(1)) >= (0, 5, 1), (
+        f"scrapling 하한이 0.5.1 미만입니다 (제약식={constraint!r}) — 0.4 의 DynamicFetcher 경로가 다시 열립니다"
     )
 
 

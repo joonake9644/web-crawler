@@ -72,7 +72,7 @@ WAF를 "탐지"만 하지 말고 **"이 WAF를 뚫으려면 무엇이 필요한�
 
 | WAF 유형 | 필요 역량 | 올바른 도구 | curl_cffi/Stealthy로 되나? |
 |----------|----------|------------|---------------------------|
-| Cloudflare 기본 | JS 실행 | StealthyFetcher / DynamicFetcher | ✅ (Stealthy `solve_cloudflare=True`) |
+| Cloudflare 기본 | JS 실행 | StealthyFetcher / plain_dynamic | ✅ (Stealthy `solve_cloudflare=True`) |
 | DataDome / PerimeterX / F5 / 단순 403 | TLS 지문 위조 | **curl_cffi 그리드** 먼저 → 안되면 브라우저 | ✅ 종종 그리드로 뚫림 |
 | **Akamai Bot Manager** | **실제 TLS 스택 + 행동** | **Chrome CDP (headed real Chrome)** | ❌ **안 됨** |
 
@@ -100,7 +100,7 @@ firefox133        www 제거
 safari_ios (모바일)
 ```
 
-각 셀을 시도하고 **매 응답마다 `detect_softblock()`로 검증** — 200이어도 통과로 치지 않는다. 모든 셀 소진 후에도 `blocked`면 브라우저 단계(StealthyFetcher → DynamicFetcher)로 에스컬레이션.
+각 셀을 시도하고 **매 응답마다 `detect_softblock()`로 검증** — 200이어도 통과로 치지 않는다. 모든 셀 소진 후에도 `blocked`면 브라우저 단계(StealthyFetcher)로 에스컬레이션.
 
 > 코드 템플릿은 `fetcher-patterns.md § F: curl_cffi 경량 그리드` 참조.
 
@@ -131,7 +131,7 @@ safari_ios (모바일)
 
 ### 핵심 원칙
 
-- **일반 FETCHER_CHAIN을 사용하지 않는다** (StealthyFetcher, DynamicFetcher 시도하지 않음)
+- **일반 FETCHER_CHAIN을 사용하지 않는다** (StealthyFetcher, plain_dynamic 시도하지 않음)
 - **통지가 끝난 뒤에는 4·5단을 거치지 않고 곧바로 Chrome CDP로 전환한다** — 헛고생 방지
 - headless Chrome은 Akamai에 탐지됨 → **headed Chrome** 필수 (macOS/Windows)
 
@@ -225,7 +225,7 @@ for batch_start in range(1, TOTAL_PAGES + 1, BATCH_SIZE):
 
 ### Chrome CDP 사용 불가 시
 
-StealthyFetcher → DynamicFetcher 순서로 폴백하되, 사용자에게 경고:
+StealthyFetcher 로 폴백하되, 사용자에게 경고:
 "Akamai 보호 사이트이므로 Chrome CDP가 필요합니다"
 
 ---
@@ -357,7 +357,7 @@ page = fetcher.fetch("<URL>", headless=True, solve_cloudflare=True)
 
 ## Jina Reader 폴백
 
-JS 렌더링이 필요하거나 가볍게 막힌 페이지를 **브라우저 없이** 외부 렌더된 마크다운으로 받는 저비용 폴백. (insane-search 차용) 사다리 A 안에서 DynamicFetcher(3단)로 올리기 전, 또는 **이음매를 넘기 직전** 단계. 정찰 시 본문 빠른 확인용으로도 쓴다.
+JS 렌더링이 필요하거나 가볍게 막힌 페이지를 **브라우저 없이** 외부 렌더된 마크다운으로 받는 저비용 폴백. (insane-search 차용) 사다리 A 안에서 plain_dynamic(3단)으로 올리기 전, 또는 **이음매를 넘기 직전** 단계. 정찰 시 본문 빠른 확인용으로도 쓴다.
 
 ```python
 from utils import plain_get   # Jina 는 사다리 A 쪽이다 — 위장 인자를 붙이지 않는다
@@ -394,7 +394,7 @@ markdown = resp.text
 **순서: 평문 HTTP → curl_cffi 그리드(브라우저 X) → 브라우저 티어.** 그리드를 브라우저 앞에 둔다.
 
 ```python
-from scrapling.fetchers import StealthyFetcher, DynamicFetcher
+from scrapling.fetchers import StealthyFetcher
 from scrapling import Selector
 from utils import setup_logger, detect_softblock, plain_get
 # fetch_via_grid 는 fetcher-patterns.md § F 참조
@@ -407,14 +407,13 @@ def _grid_tier(url):
 
 # 사다리 A 전용 체인(fetcher-patterns.md § FETCHER_CHAIN)과 다른 물건이다 — 이건 B 쪽이고,
 # 여기 진입하기 전에 통지가 이미 끝나 있어야 한다.
-# 아래 DynamicFetcher 는 `google_search` 기본값(=조작된 Google Referer)을 그대로 둔다.
-# 사다리 A 의 `plain_dynamic()` 이 그걸 끄는 것과 대비되는데, 실수가 아니라 층이 다르다 —
-# 여기는 통지를 이미 마친 뒤이고, 우회 수단을 쓰기로 사용자가 고른 자리다.
+# 옛 판(scrapling 0.4)에는 StealthyFetcher 뒤에 DynamicFetcher 티어가 있었다. 0.5 에서 그 클래스가
+# 없어져 뺐다 — 이 체인의 브라우저 티어는 StealthyFetcher 하나다. 사다리 A 3단 `plain_dynamic()` 은
+# 조작된 Referer 를 거부하는 위장 없는 경로라 이 자리를 대신하지 않는다(층이 다르다).
 FETCHER_CHAIN = [
     ("plain_get",       plain_get),                                           # 위장 없는 재시도 (맨 Fetcher().get 은 기본이 impersonate+stealthy_headers 라 평문이 아니다)
     ("curl_cffi grid",  _grid_tier),                                          # 4단 — 브라우저 앞 티어
     ("StealthyFetcher", lambda url: StealthyFetcher().fetch(url, headless=True)),
-    ("DynamicFetcher",  lambda url: DynamicFetcher().fetch(url, network_idle=True)),
 ]
 
 def fetch_with_escalation(url: str):

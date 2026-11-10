@@ -8,9 +8,9 @@ SKILL.md Step 3에서 결정된 전략에 맞는 패턴을 선택하여 사용�
 1. [공통 필수 패턴](#공통-필수-패턴) — 모든 수집 코드에 적용
 2. [A: API 직접 수집 (plain_session)](#a-api-직접-수집)
 3. [B-1: 정적 HTML 수집 (Fetcher)](#b-1-정적-html-수집)
-4. [B-2: 동적/JS 사이트 수집 (DynamicFetcher)](#b-2-동적js-사이트-수집)
+4. [B-2: 동적/JS 사이트 수집 (plain_dynamic)](#b-2-동적js-사이트-수집)
 5. [F: curl_cffi 경량 그리드 (브라우저 전 돌파)](#f-curl_cffi-경량-그리드)
-6. [Infinite Scroll 패턴 (DynamicSession)](#infinite-scroll-패턴)
+6. [Infinite Scroll 패턴 (plain_dynamic + page_action)](#infinite-scroll-패턴)
 7. [대규모 수집 (Spider)](#대규모-수집-spider)
 8. [Resume (이어서 수집)](#resume-이어서-수집)
 9. [데이터 정제](#스마트-데이터-정제)
@@ -221,8 +221,10 @@ with open("./output/raw_data.json", "w", encoding="utf-8") as f:
 
 CSR(Next.js, React 등) 사이트에서 JS 렌더링이 필요한 경우.
 
-> **`plain_dynamic()` 을 쓴다.** 맨 `DynamicFetcher().fetch(url)` 은 `google_search` 가 기본값
-> `True` 라 **`Referer: https://www.google.com/` 를 지어내 붙인다.** 3단은 브라우저가 헤더를
+> **`plain_dynamic()` 을 쓴다.** 위장 없는 일반 Chromium(playwright 직접 호출)을 띄우고,
+> `google_search=True` 가 오면 거부한다. 옛 판(scrapling 0.4)의 맨 `DynamicFetcher().fetch(url)` 은
+> `google_search` 기본값이 `True` 라 **`Referer: https://www.google.com/` 를 지어내 붙였다**(0.5 에서
+> 그 클래스는 없어졌다). 3단은 브라우저가 헤더를
 > 진짜로 만들어 주는 칸이지 오지 않은 곳에서 왔다고 말하는 칸이 아니고, 통지 없이 도는
 > 사다리 A 다. (`google_search` 는 `antibot-strategies.md` 의 4단 그리드 손잡이 목록에 있는
 > 값이기도 하다 — A 에서 조용히 켜져 있으면 안 된다.)
@@ -339,7 +341,7 @@ def fetch_via_grid(url, item_selector=None, timeout=25):
     return None, trace
 ```
 
-돌파 성공 시 `r.text`를 Scrapling Selector로 파싱해 평소처럼 수집. 실패하면 StealthyFetcher → DynamicFetcher로 올린다.
+돌파 성공 시 `r.text`를 Scrapling Selector로 파싱해 평소처럼 수집. 실패하면 StealthyFetcher로 올린다.
 
 > 그리드도 안 뚫리고 브라우저까지 가기 전 본문만 빠르게 보려면 **Jina Reader 폴백**(`antibot-strategies.md § Jina Reader 폴백`)을 쓴다. 정찰·단발 본문 확인용이며 대량 수집엔 부적합.
 
@@ -348,28 +350,22 @@ def fetch_via_grid(url, item_selector=None, timeout=25):
 ## Infinite Scroll 패턴
 
 ```python
-from scrapling.fetchers import DynamicSession
+from utils import plain_dynamic
 
-# 세션 쪽에는 래퍼가 없으므로 google_search=False 를 직접 넘긴다 — 3단은 사다리 A 이고,
-# 기본값 True 는 오지 않은 곳(google)에서 왔다고 말하는 Referer 를 붙인다.
-with DynamicSession(headless=True, google_search=False) as session:
-    page = session.fetch("<URL>", network_idle=True)
-    all_items = []
-    prev_count = 0
-
-    for scroll in range(50):
-        items = page.css("<ITEM_SELECTOR>")
-        if len(items) == prev_count:
+# 3단은 사다리 A 다 — plain_dynamic 은 위장 없는 Chromium 이고 조작된 Referer 를 붙이지 않는다.
+# 스크롤은 page_action 안에서 같은 브라우저 페이지로 하고, 다 내린 뒤의 HTML 을 한 번에 받는다.
+def scroll_until_stable(page, item_selector="<ITEM_SELECTOR>", max_scrolls=50):
+    prev_count = -1
+    for _ in range(max_scrolls):
+        count = page.locator(item_selector).count()
+        if count == prev_count:
             break
-        prev_count = len(items)
+        prev_count = count
+        page.mouse.wheel(0, 20000)
+        page.wait_for_timeout(2000)
 
-        all_items = []
-        for item in items:
-            all_items.append({...})
-
-        session.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-        import time; time.sleep(2)
-        page = session.fetch("<URL>", network_idle=True)
+page = plain_dynamic("<URL>", network_idle=True, page_action=scroll_until_stable)
+all_items = [{...} for item in page.css("<ITEM_SELECTOR>")]
 ```
 
 ---

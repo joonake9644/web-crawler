@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "VERIFY",
   "dirty": false,
-  "verified_commit": "f226640",
+  "verified_commit": "5fc20cb",
   "session_end": {
     "independent_review": {
       "status": "passed",
       "model": "codex/gpt-6.1-sol (reasoning high) · opencode-go/deepseek-v4.1-flash#max · grok-4.7 (xhigh)",
-      "findings_fixed": 3,
-      "note": "2026-11-10 세션(DEP-001, REV-6 과제): 96435ea..7605511 독립 리뷰 3명 모두 판정 PASS(HIGH·MEDIUM 0). DeepSeek 실행기는 ECONNRESET 재시도 뒤 종료 1이었으나 결과 파일에 판정 줄 있음. 재현된 LOW 3건(평가 문서 사용처 누락, cdp_url·capture_xhr 사용처 오기, certifi 주석의 판 경계)은 f226640 에서 고침. 남은 LOW 2건(certifi 검사의 환경 마커·사전 릴리스 우회, bootstrap.py 설치 건너뜀)은 docs/task-contracts/DEP-001.slice.md 갭 목록. 판정: scrapling 0.5 비호환 → <0.5 유지, certifi>=2026.10.19 하한, venv playwright 1.64.1·patchright 1.64.4·curl_cffi 0.17.0·certifi 2026.10.23, OSV 30개 0건."
+      "findings_fixed": 5,
+      "note": "2026-11-10 세션(DEP-002, REV-7 과제): 43d8df6..be397b9 1회차 독립 리뷰 3명 모두 FAIL — 공통 MEDIUM 4건(plain_dynamic 이 옛 3단과 다름: networkidle 시간 초과 실패, wait_selector 순서·visible, status·헤더가 첫 응답, 쿠키 이름→값만). 실제 Chromium·로컬 HTTP 시험 5건 RED 확인 뒤 5fdf87b 에서 고침. 재확인 1회차(be397b9..5fdf87b) 3명 모두 PASS. 재현된 LOW 1건(헤더 출처를 '옛 3단과 같다'고 쓴 문구)은 5fc20cb 에서 정정. 남은 LOW(예외 전파·retries 없음, _forbid_stealth 범위, troubleshooting.md:47 당시 이름)는 docs/task-contracts/DEP-002.slice.md 갭 목록. 결과: scrapling[fetchers]>=0.5.1,<0.6, 3단 plain_dynamic 은 playwright 직접 호출(위장 없음), 스킬 정본 4개 HCG-055, 3.14.7·3.11.15 모두 681 통과."
     }
   }
 }
