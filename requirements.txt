@@ -44,7 +44,8 @@ curl_cffi>=0.16              # 사다리 4단 경량 그리드
 patchright>=1.62,<1.65       # StealthyFetcher 런타임 (scripts/bootstrap.py 가 설치 검증)
 
 # curl_cffi 의 전이 의존(기본 CA 묶음)이라 직접 import 하지 않지만, 하한을 걸어 옛 판을 막는다.
-# 2026.10.19 미만은 유출된 emSign 중간 CA 를 믿는다(GHSA-6q48-6c7w-9gw2, DEP-001).
+# 2026.10.18 미만은 유출된 emSign 중간 CA 를 믿는다(GHSA-6q48-6c7w-9gw2). 2026.10.18 은 emSign 루트를
+# 전부 뺐고 2026.10.19 는 영향 없는 루트를 되살린 권장 판이라 이 판을 하한으로 둔다(DEP-001).
 certifi>=2026.10.19
 
 protego>=0.3.0               # robots.txt 파서 — scripts/utils.py check_robots() 에서 사용

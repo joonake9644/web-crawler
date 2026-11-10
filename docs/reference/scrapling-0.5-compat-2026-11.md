@@ -15,15 +15,15 @@
 
 | 바뀐 점 | 이 저장소 사용처(`git grep`, `.codex/` 미러 제외) | 영향 |
 |---|---|---|
-| 일반 Playwright 백엔드 제거: `DynamicFetcher`·`DynamicSession`·`AsyncDynamicSession`·`PlayWrightFetcher`·`scrapling.fetchers.chrome` 삭제 | `scripts/utils.py:424`(`from scrapling.fetchers import DynamicFetcher`), `scripts/preflight.py:91`, 스킬 참조 문서 `antibot-strategies.md`·`fetcher-patterns.md`·`troubleshooting.md`·`SKILL.md`, `docs/crawl-reference.md`, 프로필 2개(`fetcher_type: DynamicFetcher`) | **깨짐** |
-| `StealthyFetcher`·`StealthySession` 의 `cdp_url` 제거 → `RemoteSession` | 스킬 문서 일부 | 문서 수정 필요 |
-| `capture_xhr`·`captured_xhr` 제거 → `record_requests=True` + `session.network` | 스킬 문서 일부 | 문서 수정 필요 |
+| 일반 Playwright 백엔드 제거: `DynamicFetcher`·`DynamicSession`·`AsyncDynamicSession`·`PlayWrightFetcher`·`scrapling.fetchers.chrome` 삭제 | 코드 import: `scripts/utils.py:424`(`from scrapling.fetchers import DynamicFetcher`), `scripts/preflight.py:91`. 이름만 쓰는 곳: `scripts/domain_profile.py`·`scripts/profile_policy.py`(분류표), 시험 `scripts/test_utils.py` 외. 문서: 스킬 `SKILL.md`·`antibot-strategies.md`·`fetcher-patterns.md`·`troubleshooting.md`, `scripts/scrapling_reference.md`, `README.md`, `docs/agents-reference.md`, `docs/crawl-reference.md`. 프로필 2개(`fetcher_type: DynamicFetcher`) | **깨짐** |
+| `StealthyFetcher`·`StealthySession` 의 `cdp_url` 제거 → `RemoteSession` | 0건(`git grep`) | 영향 없음 |
+| `capture_xhr`·`captured_xhr` 제거 → `record_requests=True` + `session.network` | 0건(`git grep`) | 영향 없음 |
 | `response.follow()` 가 요청 본문·쿼리를 넘기지 않음 | `scripts/test_e2e_phase4.py:75`(GET 따라가기) | 영향 없음(GET) |
 | `robots_txt_obey=True` 조회 실패 시 그 도메인 차단 | 이 저장소는 `scripts/utils.py check_robots()`(protego)를 쓴다 | 영향 없음 |
 
 ## 2. 시험 환경 실측
 
-저장소 밖 `~/.cache/web-crawler-dep001/` 에 `uv venv` 로 만들었다. `requirements.txt` 에서 scrapling 줄만 `==0.5.1` 로 바꾼 사본을 설치했다.
+저장소 밖 `~/.cache/web-crawler-dep001/` 에 `uv venv` 로 만들었다. `requirements.txt` 에서 scrapling 줄만 `==0.5.1` 로 바꾼 사본을 설치했다. 아래 시험 수는 certifi 하한 검사를 더하기 **전** 실측이다(더한 뒤 현행 범위 스위트는 675 통과).
 
 | 환경 | Python | scrapling | playwright·patchright | `pytest -q -k "not e2e"` |
 |---|---|---|---|---|
