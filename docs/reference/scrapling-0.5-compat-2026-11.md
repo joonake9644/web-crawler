@@ -60,3 +60,24 @@ fetcher 경로(0.5.1, 3.14, `from scrapling.fetchers import …`): `Fetcher`·`F
 - 구동 Chromium(playwright·patchright 둘 다): 156.0.8078.4. 1.64.x 도 `chromium-1248` 을 담는다. 안정판 158 은 허용 범위(`<1.65`) 안에서 따라잡을 수 없다.
 - OSV `querybatch`(2026-11-10T04:04:00Z, 설치본 30개): 권고 0건. GHSA-6q48-6c7w-9gw2(certifi)는 닫혔다.
 - playwright 1.65.0 은 나왔고 patchright 는 1.64.4 까지다(2026-11-10 `pip index`). 상한 규칙(두 패키지 모두에 나온 뒤에만 함께 올린다)대로 그대로 둔다.
+
+## 5. 판 올림 결과 (DEP-002, 2026-11-10T15:51Z 실측)
+
+위 3절의 다음 과제 후보를 REV-7 과제 DEP-002 로 진행했다. 단 3절의 「`StealthyFetcher` 로 바꾼다」는 택하지 않았다 — `StealthyFetcher` 는 patchright 위장 브라우저(사다리 B, 통지 게이트 대상)라 이음매 위 3단을 대신할 수 없다(조각 계약 「사다리 3단 대체 설계」).
+
+| 무엇 | 결과 |
+|---|---|
+| 제약 | `scrapling[fetchers]>=0.5.1,<0.6` (하한도 0.5.1 — 0.4 와 섞인 venv 를 막는다) |
+| 3단 | `scripts/utils.py plain_dynamic` 을 playwright 직접 호출(위장 없는 Chromium)로 다시 만들었다. 반환형은 scrapling `Response` 그대로, `google_search=True`·모르는 인자는 거부 |
+| 분류표·프로필 | `plaindynamic` 키 추가. 프로필 3개 `fetcher_type` 을 `plain_dynamic` 으로. 옛 이름(`DynamicFetcher`·`DynamicSession`)은 매핑으로 계속 3단 |
+| 스킬 정본(HCG-055) | `SKILL.md`·`antibot-strategies.md`·`fetcher-patterns.md`·`troubleshooting.md` 에서 옛 이름 지시 제거. 사다리 B 체인은 `DynamicFetcher` 티어를 빼 브라우저 티어가 `StealthyFetcher` 하나. 통지 게이트·안전 문장은 그대로 |
+| preflight(3.14.7, 0.5.1) | CORE PASS 12 / FAIL 0 (「Fetcher 클래스 로드 — Fetcher/FetcherSession/StealthyFetcher + utils.plain_dynamic」) |
+| `pytest -q -k "not e2e"` | 3.14.7(작업트리 `.venv`)·3.11.15(`~/.cache/web-crawler-dep002/py311`) 모두 **676 통과**, 14 제외, 종료 0 |
+
+시험 수가 4절 범위 스위트(680 수집)보다 4 적은 이유: 문서에서 뽑는 매개변수 시험이 문서를 따라 바뀌었다 — 빠짐 5(열거 `DynamicFetcher`·`DynamicSession`, import `scrapling.fetchers.DynamicFetcher`·`DynamicSession`, 옛 스크롤 예제의 `import time`), 더함 1(열거 `plain_dynamic`). 수집 목록 전후 diff 로 확인했다.
+
+남은 차이:
+
+- 3단은 scrapling `Fetcher.configure(adaptive=…)` 를 읽지 않는다. adaptive 가 필요하면 `Selector(page.html_content, adaptive=True, storage_args=…)` 로 다시 파싱한다(0.5.1 에서 클래스명이 바뀐 요소를 다시 찾는 것 실측, `SKILL.md` 셀렉터 자가 치유 절).
+- `scrapling.engines.toolbelt.custom.Response` 는 공개 import 경로가 아니다. 상류가 옮기면 `test_utils.py` 반환형 시험이 먼저 깨진다.
+- 실제 외부 사이트 e2e 는 돌리지 않았다(이름만 옮김, 계약 범위 밖).

@@ -64,7 +64,7 @@ if profile_mgr.exists(domain):
 profile_mgr.save(domain, {
     "domain": domain,
     "capability": "<static|js_render|api|session>",   # ★ SSOT — 능력 수준. 비워 두면 save() 가 fetcher_type 에서 채운다
-    "fetcher_type": "<Fetcher|FetcherSession|DynamicFetcher|DynamicSession|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION|yt-dlp|RSS|oEmbed|Jina>",
+    "fetcher_type": "<Fetcher|FetcherSession|plain_dynamic|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION|yt-dlp|RSS|oEmbed|Jina>",
     "antibot_strategy": "<none|playwright_intercept|impersonate|curl_cffi_grid|stealthy|chrome_cdp|naver_antibot|authenticated_browser>",
     "site_type": "<static|csr|api|spa_session|akamai|api_direct|csr_api|html_endpoint|static_html>",   # 기술 서술용 상세 라벨 — 거친 능력 신호는 capability 가 SSOT 다
     # robots·ToS 사유로 배포에서 빼야 하면 명시한다 — 사다리 A 여도 이 선언은 무조건 인정된다
@@ -137,7 +137,7 @@ if verdict["crawl_delay"]:
 > | 표준 | `agent-browser` | 양 host 공통 |
 > | 폴백 1 (Claude) | **Claude in Chrome** (`mcp__claude-in-chrome__*`) | Claude Code / Cowork 전용 |
 > | 폴백 1 (Codex) | **ChatGPT Chrome 플러그인 Browser Use** (`chrome:control-chrome`) | Codex 전용 (Chrome 확장 연결 시) |
-> | 폴백 2 (공통) | Scrapling `DynamicFetcher` / Playwright `sync_api` | 양 host 공통 |
+> | 폴백 2 (공통) | `utils.plain_dynamic` (Playwright `sync_api` 일반 Chromium) | 양 host 공통 |
 >
 > **host별 분기:** Claude Code/Cowork는 `agent-browser → Claude in Chrome → 폴백 2`, Codex는 `agent-browser → ChatGPT Chrome Browser Use(연결 시) → 폴백 2`다. Codex에 `chrome:control-chrome` 스킬이 없거나 ChatGPT Chrome 확장이 연결되지 않으면 Codex 폴백 1을 건너뛴다. Codex에서 Claude in Chrome을 찾지 않는다.
 >
@@ -281,7 +281,7 @@ agent-browser를 못 쓰고 현재 Codex 세션에 `chrome:control-chrome` 스�
 | **0** 공식 API·공개데이터 | 그냥 주는 것 | 개발자 문서 / data.go.kr | `plain_session` | 1 |
 | **1** 정적 HTML | 종이에 글자가 이미 있다 | `Ctrl+U` 소스에 보임 | `plain_get` | 1 |
 | **2** 숨은 API | 종이엔 없고 **전화번호**가 적혀 있다 | Network 탭 XHR 응답에 데이터 | `plain_session` | 1 |
-| **3** 렌더링 | 전화를 **브라우저만** 걸 수 있다 | 내부 주소 직접 호출 시 토큰·서명 부족 | `DynamicFetcher` | **수십~수백** |
+| **3** 렌더링 | 전화를 **브라우저만** 걸 수 있다 | 내부 주소 직접 호출 시 토큰·서명 부족 | `plain_dynamic` | **수십~수백** |
 
 - **2단이 사다리의 심장이다.** 가장 자주 정답이고 가장 자주 건너뛰어진다. WAF 가 감지돼도 API 를 찾으면 우회 없이 끝나는 경우가 많다 — **우회한 게 아니라 우회할 필요가 없는 길을 찾은 것.**
 - **3단의 더 나은 변형**: 화면을 그리되 DOM 을 읽지 말고 **응답을 가로챈다**(`page.on("response")`). 브라우저는 띄우되 데이터는 JSON 으로 받으므로 정확하고 구조 변경에 강하다.
@@ -349,7 +349,7 @@ agent-browser를 못 쓰고 현재 Codex 세션에 `chrome:control-chrome` 스�
 |---|------|---------|----------|
 | 0·2 | API 직접 | `plain_session` | fetcher-patterns.md § API 수집 |
 | 1 | 정적 HTML | `plain_get` | fetcher-patterns.md § 정적 HTML |
-| 3 | JS 렌더링 | `DynamicFetcher` | fetcher-patterns.md § 동적 사이트 |
+| 3 | JS 렌더링 | `plain_dynamic` | fetcher-patterns.md § 동적 사이트 |
 | 3 | SPA 세션 인터셉트 | Playwright 인터셉트 | antibot-strategies.md § SPA 세션 |
 | 4 ⚠ | 경량 그리드 | `curl_cffi` 그리드 | antibot-strategies.md § curl_cffi 그리드 |
 | 5 ⚠ | 스텔스 | `StealthyFetcher` | antibot-strategies.md § Cloudflare |
@@ -404,10 +404,15 @@ output/<도메인>/<주제_YYYYMMDD_HHMMSS>/
 **저장하지 않는다**(scrapling 0.4.15 실측, SEC-001-F4). Fetcher 클래스에 먼저 설정한다.
 
 ```python
-from scrapling.fetchers import Fetcher   # StealthyFetcher / DynamicFetcher 도 같은 configure 를 쓴다
+from scrapling.fetchers import Fetcher   # StealthyFetcher 도 같은 configure 를 쓴다
 
 Fetcher.configure(adaptive=True,
                   storage_args={"storage_file": "./fingerprints/elements_storage.db"})
+# 3단 plain_dynamic 은 위 설정을 읽지 않는다(playwright 직접 호출). adaptive 가 필요하면
+# 렌더된 HTML 을 다시 파싱한다:
+#   from scrapling import Selector
+#   page = Selector(page.html_content, url=page.url, adaptive=True,
+#                   storage_args={"storage_file": "./fingerprints/elements_storage.db", "url": page.url})
 
 # 첫 수집: 핑거프린트 저장
 items = page.css("<SELECTOR>", auto_save=True)
@@ -513,7 +518,7 @@ profile_mgr = DomainProfile()  # base_dir=./fingerprints
 profile_mgr.save(domain, {
     "domain": domain,
     "capability": "<static|js_render|api|session>",   # ★ SSOT — 능력 수준. 비워 두면 save() 가 fetcher_type 에서 채운다
-    "fetcher_type": "<yt-dlp|RSS|oEmbed|Jina|Fetcher|FetcherSession|DynamicFetcher|DynamicSession|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION>",   # 파생 — 현재 엔진에서의 구현체. 앞 4개는 Step 1-B Phase 0 공인 우회로
+    "fetcher_type": "<yt-dlp|RSS|oEmbed|Jina|Fetcher|FetcherSession|plain_dynamic|Spider|playwright_spa_intercept|curl_cffi_grid|StealthyFetcher|chrome_cdp|API_SESSION>",   # 파생 — 현재 엔진에서의 구현체. 앞 4개는 Step 1-B Phase 0 공인 우회로
     "antibot_type": "<none|cloudflare|akamai|spa_session|naver_antibot|other>",
     "antibot_strategy": "<none|playwright_intercept|impersonate|curl_cffi_grid|stealthy|chrome_cdp|naver_antibot|authenticated_browser>",   # 실제로 쓴 대응. 사다리 B 를 썼으면 반드시 그 값을 적는다
     "site_type": "<static|csr|api|spa_session|akamai|api_direct|csr_api|html_endpoint|static_html>",   # 기술 서술용 상세 라벨 — 거친 능력 신호는 capability 가 SSOT 다

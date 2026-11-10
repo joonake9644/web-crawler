@@ -25,9 +25,9 @@ autoresearch 실험(4회 반복, 6개 사이트)과 실제 크롤링에서 발�
 │   └── API 키 필요? → "API 키 필요 사이트" 참조
 │
 ├── HTTP 200이지만 데이터 없음 → JS 렌더링 또는 SPA 문제
-│   ├── 페이지 내용이 빈 HTML? → DynamicFetcher로 전환 (3단, 자동)
+│   ├── 페이지 내용이 빈 HTML? → plain_dynamic으로 전환 (3단, 자동)
 │   ├── JS 챌린지 페이지? → **이음매 통지 게이트** → '진행' 이면 StealthyFetcher 또는 Chrome CDP
-│   └── SPA 내비게이션 필요? → DynamicFetcher + page_action (3단, 자동)
+│   └── SPA 내비게이션 필요? → plain_dynamic + page_action (3단, 자동)
 │
 ├── 데이터는 있지만 잘못된 데이터 → "False Positive" 참조
 │
@@ -39,7 +39,7 @@ autoresearch 실험(4회 반복, 6개 사이트)과 실제 크롤링에서 발�
 ## Akamai 사이트 수집 실패
 
 ### 증상
-- Fetcher/StealthyFetcher/DynamicFetcher 모두 실패
+- Fetcher/StealthyFetcher/plain_dynamic 모두 실패
 - HTTP 200이지만 JS 챌린지 페이지만 반환 (< 1KB, div 몇 개)
 - `_abck`, `bm_sz` 쿠키가 설정됨
 
@@ -162,8 +162,8 @@ autoresearch 4회 실험 + 실제 크롤링에서 검증된 최적 전략:
 | 사이트 | 전략 | Fetcher | 성공률 | 비고 |
 |--------|------|---------|--------|------|
 | `antibot_type: akamai` 로 기록된 도메인 | 6단 Chrome CDP (**통지 이후**) | `launch_chrome_cdp()` (headed) | 100% | headless 불가 |
-| **kurly.com** | CSR DynamicFetcher | DynamicFetcher | 100% | Next.js, page_action 필요 시 |
+| **kurly.com** | CSR 렌더링 | `plain_dynamic()` | 100% | Next.js, page_action 필요 시 |
 | **wanted.co.kr** | API 직접 | `plain_session()` | 100% | 0.6초에 30건, 가장 빠름 |
 | **g2b.go.kr** | SPA 세션 인터셉트 | Playwright on("response") | 100% | WebSquare, 로그인 불필요 |
 | **books.toscrape.com** | 정적 HTML | `plain_get()` | 100% | 테스트 사이트 |
-| **quotes.toscrape.com** | JS 렌더링 | DynamicFetcher | 100% | 테스트 사이트 |
+| **quotes.toscrape.com** | JS 렌더링 | `plain_dynamic()` | 100% | 테스트 사이트 |
