@@ -94,7 +94,7 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 
 ## REV-5 — 보안 인텔 재수집과 scrapling 0.5 평가를 과제로 추가 (2026-11-09)
 
-<!-- ADR-BASIS:carry-forward REV-4 sha256:96dfafd915cb5c06a5d435e178ac92f341c7ba24632b76478d15b2f67822712e -->
+(REV-5 당시 ADR 기준점 계승 표지: REV-4 sha256 96dfafd915cb5c06a5d435e178ac92f341c7ba24632b76478d15b2f67822712e — REV-6 에서 아래 표지로 넘겼다)
 
 **사유**: REV-4 로 순서 블록의 미완료 과제가 0개가 되어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다.
 사용자가 다음 과제를 골랐다(입력 「보안 인텔 재수집과 scrapling 0.5 평가를 REV-5 과제로 넣는 개정안 만들어」, 2026-11-09).
@@ -114,7 +114,7 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 
 <!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001 -->
 
-- [ ] SECINTEL-001: 보안 인텔 재수집 — 설치 의존성·런타임을 공개 취약점 데이터(OSV 등)와 다시 대조하고,
+- [x] SECINTEL-001: 보안 인텔 재수집 — 설치 의존성·런타임을 공개 취약점 데이터(OSV 등)와 다시 대조하고,
   `docs/security/intel-brief-2026-11-09.md`(공개 저장소라 결과 요약만)와 비공개 증거 폴더 상세 브리프를 남긴다.
   취약점이 나오면 고치지 않고 등급·영향 경로·고칠 과제를 보고한다(수정은 사용자 승인으로 새 과제). 근거: 전역 스킬 `security-program`, `docs/security/SCOPE.md`.
 - [ ] DEP-001: scrapling 0.5 호환 평가와 런타임 범위 안 갱신 — 0.5 의 바뀐 점을 원문(변경 기록·릴리스 노트)으로 확인하고,
@@ -125,3 +125,26 @@ REV-3 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 「순�
 완료 판정(검사 명령, 두 과제 공통): 실행 계약 6종 exit 0(`AGENTS.md` 「제품 변경 전」). DEP-001 은 추가로 3.11 환경의 `pytest -q -k "not e2e"` exit 0.
 
 하지 않는 것: playwright·patchright 상한 `<1.65` 변경(PY311-001 상시 조건 그대로), scrapling 0.5 의 새 기능 도입(호환 확인까지만), 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
+
+## REV-6 — SECINTEL-001 완료 표시와 DEP-001 에 certifi 하한 추가 (2026-11-10)
+
+<!-- ADR-BASIS:carry-forward REV-5 sha256:1c334bbd01c035cf91df1361b1668f474ca34890e1e73a67988c39d4471910fa -->
+
+**사유**: ① 조각 SECINTEL-001 이 닫혔는데(사용자 입력 `290a5db2c3f7` 「SECINTEL-001 종료 승인」, PR #13 병합 `99218be`) REV-5 과제 줄이
+`[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. ② 그 조각이 찾은 취약점(간접 의존 certifi 2026.7.22,
+GHSA-6q48-6c7w-9gw2 = PYSEC-2026-4320, GHSA DB 등급 CRITICAL, 고친 판 2026.10.19)을 고칠 자리를 사용자가 DEP-001 로 정했다
+(입력 「SECINTEL-001 완료 표시하고 certifi 하한을 DEP-001에 넣는 REV-6 개정안 만들어」, 2026-11-10).
+
+**순서는 바꾸지 않는다**(SEC001-CLOSE → SECINTEL-001 → DEP-001). 바뀐 줄은 두 줄뿐이다: SECINTEL-001 과제 줄의 `[ ]` → `[x]`,
+그리고 REV-4 계승 표지를 설명 문장으로 바꾼 것(표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다).
+
+SECINTEL-001 완료 근거(실측): 공개 요약 `docs/security/intel-brief-2026-11-09.md`, 비공개 상세 `~/Developer/security-evidence/web-crawler/intel-brief-2026-11-09.md`,
+`plan slice close` 검사 6건 통과·종료 분류 4칸 0, 실행 계약 6종 exit 0(674 passed).
+
+DEP-001 에 더하는 범위(REV-5 의 DEP-001 문장은 그대로 두고 아래를 더한다):
+
+- `requirements.txt` 에 `certifi>=2026.10.19` 하한을 둔다(지금은 curl_cffi 가 끌어오는 간접 의존이라 제약이 없다).
+  TDD: 하한 검사(`scripts/test_requirements.py`)를 먼저 써서 지금 파일에서 RED 를 확인한 뒤 줄을 넣는다.
+- 로컬 venv 의 certifi 를 그 하한 이상으로 갱신하고, OSV 일괄 조회로 설치본 취약점 0건을 다시 확인한다.
+
+DEP-001 완료 판정에 더한다: `scripts/test_requirements.py` 의 certifi 하한 검사 통과, 갱신 뒤 OSV 일괄 조회에서 certifi 권고 0건.
