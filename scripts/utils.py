@@ -438,7 +438,8 @@ def plain_dynamic(url: str, *, network_idle: bool = False, page_action=None,
     # 옛 3단(scrapling 0.4.15 DynamicFetcher)과 같은 의미를 지킨다(DEP-002 독립 리뷰):
     # ① load 뒤 networkidle 은 기다려 보되, 끝나지 않는 요청(분석·롱폴링)이 있으면 그린 문서를 그대로 쓴다
     # ② page_action 다음에 wait_selector 를 attached 상태로 기다린다(숨은 요소도 기다릴 수 있다)
-    # ③ status·헤더는 page_action 뒤 마지막 메인 문서 응답에서, 쿠키는 전체 레코드로 돌려준다
+    # ③ status 는 page_action 뒤 마지막 메인 문서 응답에서, 쿠키는 전체 레코드로 돌려준다
+    #    (헤더는 옛 3단이 첫 응답에서 읽었지만 여기서는 status 와 같은 마지막 응답에서 읽는다)
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
         try:
