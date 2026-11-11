@@ -173,7 +173,7 @@ OSV 설치본 30개 권고 0건.
 | 이름만 쓰는 곳 | `scripts/profile_policy.py`·`scripts/domain_profile.py`(분류표), 스킬 정본 `.claude/skills/web-crawler/`(SKILL.md·references 3개), `scripts/scrapling_reference.md`, `README.md`, `docs/agents-reference.md`, `docs/crawl-reference.md`, 프로필 3개(`fetcher_type` 2개·notes 1개) |
 | 사다리 위치 | `dynamicfetcher`·`dynamicsession` = 사다리 A 3단 `js_render`(이음매 위). `StealthyFetcher` 는 이음매 아래 사다리 B(통지 게이트 대상) |
 
-<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002 -->
+(REV-7 당시 순서 블록: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002 — REV-9 에서 아래 순서 블록으로 넘겼다)
 
 - [x] DEP-002: scrapling 0.5 판 올림 — 0.5 에서 없어진 `DynamicFetcher`·`DynamicSession` 경로를 옮기고 상한을 `>=0.5.1,<0.6` 으로 올린다.
   먼저 사다리 3단 대체 설계(아래 불변 조건을 지키는 방법)를 조각 계약에 적어 사용자 승인을 받는다. 그다음 TDD 로 상한 검사(`test_scrapling_has_upper_bound`)를
@@ -191,7 +191,7 @@ OSV 설치본 30개 권고 0건.
 
 ## REV-8 — DEP-002 완료 표시 (2026-11-11)
 
-<!-- ADR-BASIS:carry-forward REV-7 sha256:f056cdcf1da5b59d58d1aa86600fe3f642abfcab62eddd52269ffaa545851d67 -->
+(REV-8 당시 ADR 기준점 계승 표지: REV-7 sha256 f056cdcf1da5b59d58d1aa86600fe3f642abfcab62eddd52269ffaa545851d67 — REV-9 에서 아래 표지로 넘겼다)
 
 **사유**: 조각 DEP-002 가 닫혔는데(원장 seq 229, 사용자 입력 `9c52d03c0832` 「DEP-002 종료 승인」, 종료 커밋 bf66e99, PR #17 병합 `f633f83`)
 REV-7 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. 완료를 계획에 반영한다
@@ -208,3 +208,42 @@ DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0
 이 판으로 순서 블록의 미완료 과제는 0개가 된다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. PY311-001 의 상시 조건
 (두 패키지 모두 1.65 출시 시 playwright·patchright 상한을 함께 올림)은 그대로다. DEP-002 조각에서 넘긴 LOW 갭 14건은
 `docs/task-contracts/DEP-002.slice.md` 「갭 목록」에 있고, 다음 조각이나 정리 슬롯에서 다룬다.
+
+## REV-9 — DEP-002 LOW 갭 정리를 과제로 추가 (2026-11-11)
+
+<!-- ADR-BASIS:carry-forward REV-8 sha256:055c7f63bf35079e7b5d07e1eb2e7cf6097f17e738530192d9a3f167c1aba321 -->
+
+**사유**: REV-8 로 순서 블록의 미완료 과제가 0개가 되어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다.
+사용자가 다음 과제를 골랐다(입력 「DEP-002 LOW 갭 정리를 다음 과제로 넣는 REV-9 개정안 만들어」, 2026-11-11).
+
+**REV-1~REV-8 의 범위·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: REV-7 순서 블록과 REV-8 계승 표지를 설명 문장으로
+바꾼 것(순서 블록과 계승 표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다). 완료된 과제는 순서에 그대로 둔다.
+
+출발 실측(2026-11-11, `docs/task-contracts/DEP-002.slice.md` 「갭 목록」 LOW 13건, master `a513ecc`):
+
+| 갭(계약 줄) | 실측 | 이번 과제 |
+|:-----|:-----|:-----|
+| 3단 예외 전파·`retries` 없음(57) | `docs/crawl-reference.md:270` 「네트워크 타임아웃 → 3회 재시도 후 스킵」이 3단 `plain_dynamic` 동작(재시도 없음, 예외 전파)과 다르다 | 고친다 |
+| 국제 전화번호 오탐(52) | `detect_pii([{'t':'+1 415 555 2671 2026-11-06 접수'}])` → 「전화번호 패턴 감지」 | 고친다 |
+| certifi 하한 검사 우회(46) | `scripts/test_requirements.py:227` 가 환경 마커·사전 릴리스·여러 줄 선언을 거르지 못한다 | 고친다 |
+| 기존 venv 자동 갱신 없음(47) | `scripts/bootstrap.py py_deps_ready()` 는 import 만 보고 판 하한을 보지 않는다(0.4.15 venv 도 준비됨으로 판정) | 고친다 |
+| `_forbid_stealth` 범위(58) | `scripts/test_utils.py:723` 이 `patchright.sync_api.sync_playwright` 만 막는다 | 고친다 |
+| 비공개 `Response` 경로(55) | `scripts/utils.py:436` `scrapling.engines.toolbelt.custom` 을 직접 고정하는 시험이 없다(실제 Chromium 시험이 간접으로만 깨진다) | 고친다 |
+| `plaindynamic` 키(54) | `scripts/profile_policy.py:67` 에 있다 | 닫힘 기록만 |
+| `troubleshooting.md:47`(59) | HCG-055 범위 결정으로 당시 이름 유지 | 할 일 없음, 기록만 |
+| Chromium 156 대 158(48) | patchright 1.65 미출시 → PY311-001 상시 조건 | 넘김 |
+| Brotli 판 미확인(49) | 다음 보안 인텔 수집에서 잰다 | 넘김 |
+| CISA 피드 403(50) | GitHub 사본 대체 경로가 이미 있다 | 할 일 없음, 기록만 |
+| 엔진 사본 결함·로컬 커밋 319dee0(51) | applygo36 ADR-019 하네스 동결 | 넘김(정기 점검) |
+| 병합 브랜치·작업트리 정리(53) | 저장소 밖 정리, 사용자 확인 필요 | 넘김(사용자 확인 뒤) |
+
+<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001 -->
+
+- [ ] GAPS-001: DEP-002 LOW 갭 정리 — 위 표에서 「고친다」 6건을 고친다. 3단 재시도는 조각 계약에 문서를 동작에 맞출지
+  `plain_dynamic` 에 재시도를 더할지 정해 사용자 승인을 받은 뒤 진행한다(0건 중단 규칙·사다리 A 경계는 그대로). 나머지 5건은 TDD 로
+  시험을 먼저 RED 로 확인한 뒤 고친다. 「닫힘·할 일 없음·넘김」 7건은 조각 계약 갭 목록에 사유와 함께 옮긴다.
+
+완료 판정(검사 명령): 실행 계약 6종 exit 0, 3.11 환경 `pytest -q -k "not e2e"` exit 0, 「고친다」 6건마다 RED 를 먼저 확인한 시험(또는 문서 계약 시험) 통과.
+
+하지 않는 것: 스킬 정본 `.claude/skills/web-crawler/` 수정(필요해지면 전역 관문 HCG 를 거친다), 사다리 B·통지 게이트 동작 변경,
+playwright·patchright 상한 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결), 저장소 밖 브랜치·작업트리 정리.
