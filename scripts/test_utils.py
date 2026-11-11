@@ -1041,11 +1041,23 @@ def test_pii_flags_international_phone_numbers(value):
     "+1 (415) 555-2671",      # NBSP + 괄호
     "+82 2 123 4567",    # 좁은 NBSP
     "+82　2　123　4567",    # 전각 공백
+    "+44 7911 123456 12 34 56",        # 뒤 숫자 묶음까지 먹어 15자리를 넘겼다 — 국내 패턴도 못 잡는다(GAPS-001)
 ])
 def test_pii_international_phone_survives_trailing_context(value):
     """SEC001-CLOSE — 독립 리뷰(2026-11-06, Codex) MEDIUM: 번호 뒤 문맥 때문에 경고가 사라졌다."""
     warnings = detect_pii([{"메모": value}])
     assert any("전화번호" in w for w in warnings), f"놓침: {value!r}"
+
+
+@pytest.mark.parametrize("value", [
+    "+1 415 555 2671 2026-11-06 접수",  # 국내 패턴이 우연히 잡던 값 — 국제 경로가 스스로 잡아야 한다
+    "+44 7911 123456 12 34 56",
+    "+82 10-1234-5678 2026.11.06",
+])
+def test_intl_phone_hit_cuts_trailing_groups_at_separator(value):
+    """GAPS-001 — 국제 패턴이 뒤 숫자 묶음까지 먹어 15자리를 넘으면, 구분자 자리에서 앞부분만 다시 센다."""
+    from utils import _intl_phone_hit
+    assert _intl_phone_hit(value), f"국제 경로 놓침: {value!r}"
 
 
 @pytest.mark.parametrize("value", [

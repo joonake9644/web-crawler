@@ -173,10 +173,19 @@ _E164_MIN_DIGITS, _E164_MAX_DIGITS = 8, 15
 
 
 def _intl_phone_hit(value: str) -> bool:
+    """`+국가번호` 덩어리의 숫자가 E.164 범위면 잡는다.
+
+    덩어리가 번호 뒤의 숫자 묶음(날짜 등)까지 먹어 15자리를 넘으면, **구분자 자리에서만** 잘라
+    앞부분을 다시 센다(GAPS-001). 숫자열 한가운데서는 자르지 않으므로 `+12345 67890123456789`
+    같은 긴 ID 는 여전히 걸리지 않는다(F11 규율).
+    """
     for match in _INTL_PHONE_PATTERN.finditer(value):
-        digits = sum(ch.isdigit() for ch in match.group(0))
-        if _E164_MIN_DIGITS <= digits <= _E164_MAX_DIGITS:
-            return True
+        text = match.group(0)
+        cuts = [len(text)] + [i for i, ch in enumerate(text) if i and not ch.isdigit() and ch not in "()"]
+        for end in cuts:
+            digits = sum(ch.isdigit() for ch in text[:end])
+            if _E164_MIN_DIGITS <= digits <= _E164_MAX_DIGITS:
+                return True
     return False
 
 
