@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `f44c26cdb6a53daf93be688eb0a8871b516144b5af7fbc7d2eafb0bb6a759c27`
+- 입력 다이제스트: `aa172eefb858e5d9012ec6d9e13e067250e2fcaf38116f78ddbf2e0dfebb0320`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `5fc20cb` · 브랜치 `chore/dep-002`
+측정 시점 HEAD: `f633f83` · 브랜치 `chore/rev8-dep002-done`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- f633f83 Merge pull request #17 from joonake9644/chore/dep-002
+- bf66e99 chore(harness): DEP-002 종료 분류·독립 리뷰 기록과 세션 핸드오프 생성
 - 5fc20cb docs(utils): plain_dynamic 헤더 출처 설명 정정 — 옛 3단은 첫 응답, 새 3단은 마지막 응답 (재확인 리뷰 LOW)
 - 5fdf87b fix(utils): plain_dynamic 을 옛 3단 의미에 맞춤 — networkidle·대기 순서·최종 응답·쿠키 (독립 리뷰)
 - be397b9 docs(skill): scrapling 0.5 — 스킬 정본의 DynamicFetcher 지시를 plain_dynamic 으로 옮김 (HCG-055)
@@ -49,8 +51,6 @@
 - 2a60a8a Merge pull request #15 from joonake9644/chore/dep-001
 - e8a77bb chore(harness): DEP-001 세션 종료 기록 — 독립 리뷰 PASS, 인계서 갱신
 - f226640 docs(deps): 독립 리뷰 LOW 반영 — 사용처 목록·시험 수 시점·certifi 주석 정정, 갭·종료 분류 기록
-- 7605511 fix(deps): certifi 하한(GHSA-6q48-6c7w-9gw2)과 scrapling 0.5 비호환 판정 기록
-- 96435ea chore(plan): DEP-001 평가 문서 경로를 추적 예외에 추가
 
 ## 남은 것 / 다음 세션
 
