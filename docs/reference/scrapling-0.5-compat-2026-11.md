@@ -82,3 +82,9 @@ fetcher 경로(0.5.1, 3.14, `from scrapling.fetchers import …`): `Fetcher`·`F
 - 3단은 scrapling `Fetcher.configure(adaptive=…)` 를 읽지 않는다. adaptive 가 필요하면 `Selector(page.html_content, adaptive=True, storage_args=…)` 로 다시 파싱한다(0.5.1 에서 클래스명이 바뀐 요소를 다시 찾는 것 실측, `SKILL.md` 셀렉터 자가 치유 절).
 - `scrapling.engines.toolbelt.custom.Response` 는 공개 import 경로가 아니다. 상류가 옮기면 `test_utils.py` 반환형 시험이 먼저 깨진다.
 - 실제 외부 사이트 e2e 는 돌리지 않았다(이름만 옮김, 계약 범위 밖).
+
+### 후속(GAPS-001, 2026-11-12)
+
+- 3단 재시도: 위 결과의 `plain_dynamic` 은 한 번만 시도했다(옛 3단·1·2단은 기본 `retries=3`). GAPS-001 에서 `retries=3`·`retry_delay=1` 을 같은 뜻으로 되살렸다 — 시도마다 새 브라우저, 마지막 실패는 그대로 올린다.
+- `scrapling.engines.toolbelt.custom.Response` 는 `scripts/test_utils.py` 가 직접 import·`type(page) is Response` 로 고정한다.
+- `scripts/bootstrap.py` 가 설치판을 제약식과 대조해, scrapling 0.4.15 가 남은 기존 venv 를 「준비 안 됨」으로 보고 `pip install -r` 을 돌린다(원본 체크아웃 venv 로 실측).

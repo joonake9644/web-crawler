@@ -51,6 +51,12 @@
 - 저장소 밖 브랜치·작업트리·시험 환경 정리.
 
 ## 갭 목록
+- 닫힘(DEP-002 넘김, 설계 1): `page_action`·`wait_selector` 예외 전파와 옛 `retries=3` 없음 — 예외 전파는 유지하고 `retries`·`retry_delay` 를 되살렸다. `docs/crawl-reference.md` 「네트워크 타임아웃 → 3회 재시도」가 1~3단 모두에 맞는다.
+- 닫힘(DEP-002 넘김, 설계 2): `+1 415 555 2671 2026-11-06 접수` 를 국내 패턴이 잡음 — 실제로는 국제 경로 미탐이었다(`+44 7911 123456 12 34 56` 경고 없음). 구분자 자리에서 다시 센다.
+- 닫힘(DEP-002 넘김, 설계 3): certifi 하한 검사가 환경 마커·사전 릴리스·여러 줄 선언 우회를 잡지 못한다 — packaging 의미 검사로 바꿨다.
+- 닫힘(DEP-002 넘김, 설계 4): `scripts/bootstrap.py` 는 import 가 되면 `pip install -r` 을 건너뛴다 — 설치판·제약식을 대조한다.
+- 닫힘(DEP-002 넘김, 설계 5): 시험 `_forbid_stealth` 는 `patchright.sync_api.sync_playwright` 만 막는다 — patchright 모듈 전체와 `StealthyFetcher`·`StealthySession` 까지 막는다.
+- 닫힘(DEP-002 넘김, 설계 6): `scrapling.engines.toolbelt.custom.Response` 는 공개 import 경로가 아니다 — 직접 고정 시험을 더했다.
 - 닫힘(DEP-002 넘김): `scripts/profile_policy.py` 매핑의 `plaindynamic` 키는 DEP-002 에서 더해졌다(`profile_policy.py:67`).
 - LOW(DEP-002 넘김, 할 일 없음): `troubleshooting.md:47` 은 과거 사고 원인 서술이라 당시 이름을 그대로 둔다(HCG-055 범위 결정).
 - LOW(SECINTEL-001 넘김, 할 일 없음): CISA 사이트 피드가 자동 조회를 403 으로 막는다. GitHub 사본(cisagov/kev-data) 대체 경로가 이미 있다.
@@ -58,6 +64,6 @@
 - LOW(SECINTEL-001 넘김): Chromium·curl_cffi 내장 libcurl 의 Brotli 판(KEV CVE-2026-111497)은 아직 확인하지 않았다. 다음 보안 인텔 수집에서 잰다.
 - LOW(앞 조각 넘김): master 기준 체크아웃 엔진 사본 8f3277 표시 결함·로컬 커밋 319dee0 — applygo36 ADR-019 하네스 동결로 정기 점검 대상.
 - LOW(앞 조각 넘김): 병합된 로컬 브랜치·orca 작업트리 barracuda·작업트리 rev5-secintel-dep·`~/.cache/web-crawler-dep001`·`dep002` 정리(사용자 확인 뒤).
-- LOW(DEP-002 뒤 실측): 원본 체크아웃 venv 가 아직 scrapling 0.4.15 다. 설계 4 가 들어가면 `bootstrap.py` 가 자동으로 갱신한다.
+- LOW(DEP-002 뒤 실측): 원본 체크아웃 venv 가 아직 scrapling 0.4.15 다. 설계 4 로 `bootstrap.py` 가 「준비 안 됨」(`scrapling 0.4.15 가 <0.6,>=0.5.1 에 맞지 않음`)으로 판정하므로, 병합 뒤 원본에서 `python scripts/bootstrap.py` 를 한 번 돌리면 갱신된다.
 
 ## 종료 분류
