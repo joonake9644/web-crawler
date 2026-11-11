@@ -151,7 +151,7 @@ DEP-001 완료 판정에 더한다: `scripts/test_requirements.py` 의 certifi �
 
 ## REV-7 — DEP-001 완료 표시와 scrapling 0.5 판 올림 과제 추가 (2026-11-10)
 
-<!-- ADR-BASIS:carry-forward REV-6 sha256:9908100761ae5dc12b99252f44569f8415e95e31ee6825a4b44d884f684320e7 -->
+(REV-7 당시 ADR 기준점 계승 표지: REV-6 sha256 9908100761ae5dc12b99252f44569f8415e95e31ee6825a4b44d884f684320e7 — REV-8 에서 아래 표지로 넘겼다)
 
 **사유**: ① 조각 DEP-001 이 닫혔는데(사용자 입력 `723efaff5977` 「DEP-001 종료 승인」, PR #15 병합 `2a60a8a`) REV-5 과제 줄이
 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. ② 그 조각이 scrapling 0.5 를 비호환으로 판정했고(상한 `<0.5` 유지),
@@ -175,7 +175,7 @@ OSV 설치본 30개 권고 0건.
 
 <!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002 -->
 
-- [ ] DEP-002: scrapling 0.5 판 올림 — 0.5 에서 없어진 `DynamicFetcher`·`DynamicSession` 경로를 옮기고 상한을 `>=0.5.1,<0.6` 으로 올린다.
+- [x] DEP-002: scrapling 0.5 판 올림 — 0.5 에서 없어진 `DynamicFetcher`·`DynamicSession` 경로를 옮기고 상한을 `>=0.5.1,<0.6` 으로 올린다.
   먼저 사다리 3단 대체 설계(아래 불변 조건을 지키는 방법)를 조각 계약에 적어 사용자 승인을 받는다. 그다음 TDD 로 상한 검사(`test_scrapling_has_upper_bound`)를
   먼저 RED 로 바꾸고, 코드(`plain_dynamic`·`preflight`·분류표)·시험·스킬 정본 문서(미러는 `sync_codex_mirror.py` 로 재생성)·참조 문서·프로필을 옮긴다.
   옛 프로필이 쓰는 옛 이름(`DynamicFetcher` 등)은 `profile_policy.py` 의 옛 이름 매핑으로 계속 읽는다.
@@ -188,3 +188,23 @@ OSV 설치본 30개 권고 0건.
 
 하지 않는 것: scrapling 0.5 새 기능(`RemoteSession`·`record_requests`·`pierce_shadow` 등) 도입, playwright·patchright 상한 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
 스킬 정본 `.claude/skills/web-crawler/` 수정이 전역 관문(HCG) 대상이면 관문 보고와 승인을 거친다.
+
+## REV-8 — DEP-002 완료 표시 (2026-11-11)
+
+<!-- ADR-BASIS:carry-forward REV-7 sha256:f056cdcf1da5b59d58d1aa86600fe3f642abfcab62eddd52269ffaa545851d67 -->
+
+**사유**: 조각 DEP-002 가 닫혔는데(원장 seq 229, 사용자 입력 `9c52d03c0832` 「DEP-002 종료 승인」, 종료 커밋 bf66e99, PR #17 병합 `f633f83`)
+REV-7 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. 완료를 계획에 반영한다
+(사용자 입력 「DEP-002 완료 표시하는 REV-8 개정안 만들어」, 2026-11-11).
+
+**범위·순서·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: DEP-002 과제 줄의 `[ ]` → `[x]`, 그리고 REV-6 계승 표지를
+설명 문장으로 바꾼 것(표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다). REV-7 순서 블록은 그대로 둔다.
+
+DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0.6`, 사다리 3단 `scripts/utils.py plain_dynamic` 을 playwright 직접 호출
+(위장 없는 Chromium)로 다시 만듦, 스킬 정본 수정은 전역 관문 HCG-055 승인 범위 안, `plan slice close` 검사 8건 통과·종료 분류 4칸 0,
+실행 계약 6종과 3.11 `pytest -q -k "not e2e"` exit 0(3.14.7·3.11.15 모두 681 passed), scrapling 0.5.1 환경 `scripts/preflight.py` CORE FAIL 0,
+독립 리뷰 3명(Codex·DeepSeek·Grok) 1회차 공통 MEDIUM 을 고친 뒤 재확인 PASS. 결과 기록은 `docs/reference/scrapling-0.5-compat-2026-11.md` 5절.
+
+이 판으로 순서 블록의 미완료 과제는 0개가 된다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. PY311-001 의 상시 조건
+(두 패키지 모두 1.65 출시 시 playwright·patchright 상한을 함께 올림)은 그대로다. DEP-002 조각에서 넘긴 LOW 갭 14건은
+`docs/task-contracts/DEP-002.slice.md` 「갭 목록」에 있고, 다음 조각이나 정리 슬롯에서 다룬다.
