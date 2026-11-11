@@ -648,6 +648,9 @@ class _FakePage:
         self.url = "https://example.com/final"
 
     def goto(self, url, **kw):
+        if self.log.get("fail_goto", 0) > 0:                      # 재시도 시험(GAPS-001)
+            self.log["fail_goto"] -= 1
+            raise RuntimeError(f"탐색 실패 {self.log['fail_goto']}")
         self.log["goto"] = (url, kw)
         self.log.setdefault("order", []).append("goto")
         return _FakeResponse()
@@ -704,6 +707,7 @@ def _fake_sync_playwright(log):
         @staticmethod
         def launch(**kw):
             log["launch"] = kw
+            log["launches"] = log.get("launches", 0) + 1
             return _FakeBrowser(log)
 
     class _P:
@@ -721,9 +725,19 @@ def _fake_sync_playwright(log):
 
 
 def _forbid_stealth(monkeypatch):
+    """3단 시험 동안 위장 백엔드를 모두 막는다 — patchright 모듈 import 와 scrapling 위장 fetcher(GAPS-001)."""
+    import sys
+    import scrapling.fetchers as sf
+
     def _boom(*a, **k):
         raise AssertionError("3단이 위장 백엔드(patchright)를 불렀다 — 이음매를 넘었다")
     monkeypatch.setattr("patchright.sync_api.sync_playwright", _boom)
+    # scrapling 위장 fetcher 는 첫 접근 때 patchright 를 불러오므로 모듈을 막기 전에 갈아 끼운다.
+    monkeypatch.setattr(sf.StealthyFetcher, "fetch", _boom)
+    monkeypatch.setattr(sf, "StealthySession", _boom)
+    for name in [m for m in sys.modules if m == "patchright" or m.startswith("patchright.")]:
+        monkeypatch.setitem(sys.modules, name, None)                # 이미 불린 모듈도 다시 못 쓴다
+    monkeypatch.setitem(sys.modules, "patchright", None)
 
 
 def test_plain_dynamic_uses_plain_playwright_and_returns_scrapling_response(monkeypatch):
@@ -776,6 +790,65 @@ def test_plain_dynamic_rejects_unknown_arguments(monkeypatch):
     with pytest.raises(TypeError):
         plain_dynamic("https://example.com", solve_cloudflare=True)
     assert "launch" not in log
+
+
+# GAPS-001 설계 1 — 1·2단(scrapling 정적 요청)과 옛 3단은 기본 3회 시도한다. 3단만 1회면 후퇴다.
+
+def test_plain_dynamic_retries_until_success(monkeypatch):
+    log = {"fail_goto": 2}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    page = plain_dynamic("https://example.com", retry_delay=0)
+    assert log["launches"] == 3                                    # 시도마다 새 브라우저
+    assert page.status == 200
+
+
+def test_plain_dynamic_raises_last_error_after_retries(monkeypatch):
+    log = {"fail_goto": 10}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    with pytest.raises(RuntimeError, match="탐색 실패 7"):          # 실패를 숨기지 않는다
+        plain_dynamic("https://example.com", retry_delay=0)
+    assert log["launches"] == 3                                    # 기본 retries=3 = 총 시도 수
+
+
+def test_plain_dynamic_retries_one_means_single_attempt(monkeypatch):
+    log = {"fail_goto": 10}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    with pytest.raises(RuntimeError):
+        plain_dynamic("https://example.com", retries=1, retry_delay=0)
+    assert log["launches"] == 1
+
+
+def test_plain_dynamic_waits_retry_delay_between_attempts(monkeypatch):
+    log = {"fail_goto": 1}
+    slept = []
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    monkeypatch.setattr("utils.time.sleep", slept.append)
+    plain_dynamic("https://example.com", retry_delay=2)
+    assert slept == [2]
+
+
+# GAPS-001 설계 5 — 3단 시험의 위장 차단은 patchright 모듈 전체와 scrapling 위장 fetcher 까지 막는다.
+
+def test_forbid_stealth_blocks_patchright_import_and_stealthy_fetchers(monkeypatch):
+    import scrapling.fetchers as sf
+    _forbid_stealth(monkeypatch)
+    with pytest.raises(ImportError):
+        import patchright  # noqa: F401
+    with pytest.raises(AssertionError, match="위장"):
+        sf.StealthyFetcher.fetch("https://example.com")
+    with pytest.raises(AssertionError, match="위장"):
+        sf.StealthySession()
+
+
+# GAPS-001 설계 6 — 3단 반환형은 scrapling 비공개 경로의 Response 다. 상류가 옮기면 여기서 먼저 깨진다.
+
+def test_plain_dynamic_returns_private_scrapling_response_class(monkeypatch):
+    from scrapling.engines.toolbelt.custom import Response
+    log = {}
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", _fake_sync_playwright(log))
+    page = plain_dynamic("https://example.com")
+    assert type(page) is Response
+    assert callable(page.css) and callable(page.xpath)
 
 
 def test_plain_dynamic_renders_local_js_page(tmp_path):
@@ -1064,3 +1137,19 @@ def test_save_cookies_tightens_existing_world_readable_file(tmp_path):
     save_cookies({"session": "abc"}, str(filepath))
     assert os.stat(filepath).st_mode & 0o077 == 0
     assert load_cookies(str(filepath)) == {"session": "abc"}
+
+
+def test_plain_dynamic_documented_arguments_match_signature():
+    """문서가 말하는 3단 인자 목록이 실제 시그니처와 같다(GAPS-001) — 인자를 더하고 문서를 잊지 않게."""
+    import inspect
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    accepted = {n for n in inspect.signature(plain_dynamic).parameters if n not in ("url", "google_search")}
+    crawl = (root / "docs" / "crawl-reference.md").read_text(encoding="utf-8")
+    line = next(l for l in crawl.splitlines() if l.startswith("| JS 렌더링 실패"))
+    assert set(re.findall(r"`(\w+)`", line.split("받는 인자는", 1)[1])) == accepted
+    ref = (root / "scripts" / "scrapling_reference.md").read_text(encoding="utf-8")
+    section = ref.split("### 파라미터", 1)[1].split("반환값:", 1)[0]
+    listed = set(re.findall(r"^- `(\w+)=", section, re.M)) - {"google_search"}
+    assert listed == accepted

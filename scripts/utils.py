@@ -415,7 +415,8 @@ DYNAMIC_KWARGS = {"google_search": False}
 
 def plain_dynamic(url: str, *, network_idle: bool = False, page_action=None,
                   wait_selector: str | None = None, headless: bool = True,
-                  timeout: int = 30_000, google_search: bool = DYNAMIC_KWARGS["google_search"]):
+                  timeout: int = 30_000, retries: int = 3, retry_delay: float = 1,
+                  google_search: bool = DYNAMIC_KWARGS["google_search"]):
     """사다리 3단. JS 렌더링이 필요할 때 — 출처는 지어내지 않는다.
 
     `impersonate`/`stealthy_headers` 짝 강제는 여기 없다. 그건 HTTP 계층 인자이고
@@ -426,11 +427,30 @@ def plain_dynamic(url: str, *, network_idle: bool = False, page_action=None,
     그래서 3단은 playwright 를 직접 불러 위장 없는 Chromium 으로 렌더하고, 결과만 지금까지와
     같은 scrapling 응답(`.status`·`.css()`)으로 돌려준다(DEP-002). 모르는 인자는 시그니처가
     `TypeError` 로 거부한다 — 옛 DynamicFetcher 인자를 조용히 버리지 않는다.
+
+    `retries`·`retry_delay` 는 1·2단(scrapling 정적 요청)·옛 3단과 같은 뜻이다(GAPS-001). 총 시도 수는
+    `max(1, retries)` 이고 시도마다 새 브라우저로 처음부터 렌더한다. 마지막 실패는 그대로 올린다 —
+    재시도는 같은 3단을 다시 부를 뿐 다음 칸(사다리 B)으로 넘어가지 않는다.
     """
     if google_search:
         raise ValueError(
             "google_search=True 는 Referer: https://www.google.com/ 를 지어낸다 — "
             "사다리 A 3단에서는 쓰지 않는다(출처 조작 금지)")
+    attempts = max(1, retries or 1)
+    for attempt in range(attempts):
+        try:
+            return _render_plain(url, network_idle=network_idle, page_action=page_action,
+                                 wait_selector=wait_selector, headless=headless, timeout=timeout)
+        except Exception as e:
+            if attempt == attempts - 1:
+                raise
+            logging.getLogger(__name__).warning(
+                "plain_dynamic %d/%d회 실패: %s — %s초 뒤 다시 시도", attempt + 1, attempts, e, retry_delay)
+            time.sleep(retry_delay)
+
+
+def _render_plain(url, *, network_idle, page_action, wait_selector, headless, timeout):
+    """`plain_dynamic` 의 한 번의 시도 — 위장 없는 Chromium 으로 한 번 렌더한다."""
     from playwright.sync_api import sync_playwright  # lazy — 위장 없는 playwright
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
     from scrapling.engines.toolbelt.custom import Response
