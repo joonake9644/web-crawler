@@ -65,5 +65,13 @@
 - LOW(앞 조각 넘김): master 기준 체크아웃 엔진 사본 8f3277 표시 결함·로컬 커밋 319dee0 — applygo36 ADR-019 하네스 동결로 정기 점검 대상.
 - LOW(앞 조각 넘김): 병합된 로컬 브랜치·orca 작업트리 barracuda·작업트리 rev5-secintel-dep·`~/.cache/web-crawler-dep001`·`dep002` 정리(사용자 확인 뒤).
 - LOW(DEP-002 뒤 실측): 원본 체크아웃 venv 가 아직 scrapling 0.4.15 다. 설계 4 로 `bootstrap.py` 가 「준비 안 됨」(`scrapling 0.4.15 가 <0.6,>=0.5.1 에 맞지 않음`)으로 판정하므로, 병합 뒤 원본에서 `python scripts/bootstrap.py` 를 한 번 돌리면 갱신된다.
+- 닫힘(독립 리뷰 LOW, Codex·Grok 공통): certifi 하한 검사가 고정 표본만 봐서 `>=2026.10.19rc2` 를 통과시키고 `>=2026.10.24,<2027` 을 거부했다 — 하한을 제약식에서 직접 읽도록 고침(021c919, RED 2건 확인).
+- LOW(독립 리뷰, Grok): `bootstrap.py` 가 「준비 안 됨」 사유(`requirements_unsatisfied()`)를 화면에 찍지 않고 `pip install -r` 로 간다. 판정은 맞고 사유 표시만 없다.
+- LOW(독립 리뷰, Grok 기록): 점 구분 16자리 `+1234.5678.9012.3456` 이 이제 전화번호 경고를 낸다(구분자 자리 절단 — 설계 2 가 정한 넓히기, 숫자열 한가운데는 자르지 않음).
+- LOW(독립 리뷰 실행): DeepSeek(opencode-go/deepseek-v4.1-flash#max)은 두 번 모두 파일을 읽은 뒤 판정 줄 없이 종료코드 1 로 끝났다(오류 메시지 없음). 리뷰는 Codex·Grok 2명 PASS 로 갈음했다.
 
 ## 종료 분류
+- missing: 없음
+- partial: 없음
+- contradicts: 없음
+- unrequested: 없음
