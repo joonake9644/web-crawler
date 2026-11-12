@@ -3,13 +3,13 @@
   "active_work_id": "PY311-001",
   "stage": "VERIFY",
   "dirty": false,
-  "verified_commit": "5fc20cb",
+  "verified_commit": "497ce5b",
   "session_end": {
     "independent_review": {
       "status": "passed",
-      "model": "codex/gpt-6.1-sol (reasoning high) · opencode-go/deepseek-v4.1-flash#max · grok-4.7 (xhigh)",
-      "findings_fixed": 5,
-      "note": "2026-11-10 세션(DEP-002, REV-7 과제): 43d8df6..be397b9 1회차 독립 리뷰 3명 모두 FAIL — 공통 MEDIUM 4건(plain_dynamic 이 옛 3단과 다름: networkidle 시간 초과 실패, wait_selector 순서·visible, status·헤더가 첫 응답, 쿠키 이름→값만). 실제 Chromium·로컬 HTTP 시험 5건 RED 확인 뒤 5fdf87b 에서 고침. 재확인 1회차(be397b9..5fdf87b) 3명 모두 PASS. 재현된 LOW 1건(헤더 출처를 '옛 3단과 같다'고 쓴 문구)은 5fc20cb 에서 정정. 남은 LOW(예외 전파·retries 없음, _forbid_stealth 범위, troubleshooting.md:47 당시 이름)는 docs/task-contracts/DEP-002.slice.md 갭 목록. 결과: scrapling[fetchers]>=0.5.1,<0.6, 3단 plain_dynamic 은 playwright 직접 호출(위장 없음), 스킬 정본 4개 HCG-055, 3.14.7·3.11.15 모두 681 통과."
+      "model": "codex/gpt-6.1-sol (reasoning high) · grok-4.7 (xhigh) — opencode-go/deepseek-v4.1-flash#max 는 2회 모두 판정 없이 종료(exit 1)",
+      "findings_fixed": 1,
+      "note": "2026-11-12 세션(GAPS-001, REV-9 과제): e280c4f..c7bfa2c 독립 리뷰 Codex PASS·Grok PASS(Grok 1회차는 grok-cli 종료 142·opencode DNS 실패로 판정 없음, 재실행 PASS). 공통 LOW 1건(certifi 하한 검사가 고정 표본만 봄 — rc2 통과·안전 범위 거부)은 RED 2건 확인 뒤 021c919 에서 고침. 남은 LOW(bootstrap 사유 미표시, 점 구분 16자리 경고)는 docs/task-contracts/GAPS-001.slice.md 갭 목록. 결과: plain_dynamic retries=3·retry_delay=1 복원, 국제 전화 미탐 수정, certifi 의미 검사, bootstrap 설치판 대조, 3.14.7·3.11.15 모두 711 통과."
     }
   }
 }
