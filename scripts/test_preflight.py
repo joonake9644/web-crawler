@@ -48,18 +48,24 @@ def test_http_check_calls_plain_get_with_check_url(monkeypatch):
 
 @pytest.mark.parametrize("status,expected", [(200, "PASS"), (503, "WARN")])
 def test_http_check_verdict_by_status(monkeypatch, status, expected):
-    monkeypatch.setattr(utils, "plain_get", lambda url, **kw: _Page(status))
+    calls = []
+    monkeypatch.setattr(utils, "plain_get", lambda url, **kw: calls.append(url) or _Page(status))
     preflight.check_http_fetch()
+    assert calls == ["https://httpbin.org/html"]
     assert _statuses() == [(expected, "HTTP fetch (httpbin)")]
 
 
 @pytest.mark.parametrize("error", [OSError("연결 거부"), TimeoutError()])
 def test_http_check_exception_is_warn(monkeypatch, error):
+    calls = []
+
     def _raise(url, **kw):
+        calls.append(url)
         raise error
 
     monkeypatch.setattr(utils, "plain_get", _raise)
     preflight.check_http_fetch()
+    assert calls == ["https://httpbin.org/html"]
     assert _statuses() == [("WARN", "HTTP fetch (httpbin)")]
 
 
