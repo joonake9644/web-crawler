@@ -237,7 +237,7 @@ DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0
 | 엔진 사본 결함·로컬 커밋 319dee0(51) | applygo36 ADR-019 하네스 동결 | 넘김(정기 점검) |
 | 병합 브랜치·작업트리 정리(53) | 저장소 밖 정리, 사용자 확인 필요 | 넘김(사용자 확인 뒤) |
 
-<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001 -->
+(REV-9 당시 순서 블록: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001 — REV-11 에서 아래 순서 블록으로 넘겼다)
 
 - [x] GAPS-001: DEP-002 LOW 갭 정리 — 위 표에서 「고친다」 6건을 고친다. 3단 재시도는 조각 계약에 문서를 동작에 맞출지
   `plain_dynamic` 에 재시도를 더할지 정해 사용자 승인을 받은 뒤 진행한다(0건 중단 규칙·사다리 A 경계는 그대로). 나머지 5건은 TDD 로
@@ -250,7 +250,7 @@ playwright·patchright 상한 변경, 하네스 파일 변경(applygo36 ADR-019 
 
 ## REV-10 — GAPS-001 완료 표시 (2026-11-12)
 
-<!-- ADR-BASIS:carry-forward REV-9 sha256:21c40e6e15416c83adef2069dea67df29014e7ea74b4e0bc5a50c7264d69c3a8 -->
+(REV-10 당시 ADR 기준점 계승 표지: REV-9 sha256 21c40e6e15416c83adef2069dea67df29014e7ea74b4e0bc5a50c7264d69c3a8 — REV-11 에서 아래 표지로 넘겼다)
 
 **사유**: 조각 GAPS-001 이 닫혔는데(원장 seq 242, 사용자 입력 `89928b4d462d` 「GAPS-001 종료 승인」, 종료 커밋 e9c7d22, PR #20 병합 `33e21da`)
 REV-9 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. 완료를 계획에 반영한다
@@ -266,3 +266,36 @@ DeepSeek 은 2회 판정 없이 종료 — 계약 갭 목록에 기록).
 
 이 판으로 순서 블록의 미완료 과제는 0개가 된다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. 넘긴 LOW 갭은
 `docs/task-contracts/GAPS-001.slice.md` 「갭 목록」에 있다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
+
+## REV-11 — preflight HTTP 점검을 사다리 1단 `plain_get` 으로 바꾸는 과제 추가 (2026-11-12)
+
+<!-- ADR-BASIS:carry-forward REV-10 sha256:94578e3ee87512768db33f7ccc394466ddf4b085108d4c767699446c68e0de2e -->
+
+**사유**: REV-10 으로 순서 블록의 미완료 과제가 0개가 되었다. 원본 체크아웃 venv 를 bootstrap 으로 갱신하는 중에
+preflight 가 지어낸 출처를 붙인 요청을 보내는 것을 실측했고, 사용자가 이를 다음 과제로 골랐다
+(입력 「preflight HTTP 점검을 plain_get으로 바꾸는 과제를 넣는 REV-11 개정안 만들어」, 2026-11-12).
+
+**REV-1~REV-10 의 범위·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: REV-9 순서 블록과 REV-9 계승 표지를 설명 문장으로
+바꾼 것이다(둘 다 한 본문에서 첫 하나만 읽히므로 REV-11 절로 옮겼다). 끝난 과제도 순서 블록에 남긴다.
+
+출발 실측(2026-11-12, master `6760b8a`, scrapling 0.5.1):
+
+| 항목 | 출발 실측 값 |
+|:--------|:--------|
+| 호출 | `scripts/preflight.py:127` `check_http_fetch()` 가 `Fetcher().get("https://httpbin.org/html")` — scrapling 기본값 그대로 |
+| 나간 요청 | 원본 체크아웃 bootstrap(`--core-only`) 로그: `Fetched (200) <GET https://httpbin.org/html> (referer: https://www.google.com/)` — 지어낸 출처 |
+| 경고 | `Fetcher()` 인스턴스 생성이 「This logic is deprecated now … Use \`Fetcher.configure()\` instead」 경고를 낸다(인스턴스 없이 `Fetcher.get` 을 부르는 `plain_get` 은 내지 않는다) |
+| 다른 호출처 | 시험 밖 `scripts/*.py` 에서 scrapling 기본값으로 직접 요청하는 곳은 이 한 곳(`git grep`) |
+| 시험 | preflight 용 시험 파일이 없다 |
+
+<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001,PREFLIGHT-001 -->
+
+- [ ] PREFLIGHT-001: preflight HTTP 점검을 사다리 1단으로 — `check_http_fetch()` 가 `utils.plain_get` 을 부르게 바꿔
+  위장 기본값(`impersonate`·`stealthy_headers`, 지어낸 Referer)을 끄고 `Fetcher()` 인스턴스 경고를 없앤다. TDD: 네트워크 없이
+  `plain_get` 경유와 요청 인자(위장 끔)를 확인하는 시험을 먼저 RED 로 본 뒤 고친다. 판정(200=PASS, 그 밖·예외=WARN)과
+  `--no-network` 동작은 그대로다.
+
+완료 판정(검사 명령): 실행 계약 6종 exit 0, 3.11 환경 `pytest -q -k "not e2e"` exit 0, `scripts/preflight.py --core-only --no-network`
+CORE FAIL 0, 네트워크가 되는 환경에서 `scripts/preflight.py --core-only` 로그에 `referer: https://www.google.com/` 이 없다.
+
+하지 않는 것: preflight 의 다른 점검 항목 변경, 스킬 정본 수정, 사다리·통지 게이트 동작 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
