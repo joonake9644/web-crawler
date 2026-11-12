@@ -266,8 +266,8 @@ chrome.exe --remote-debugging-port=9222 \
 | Cloudflare Challenge | 통지 게이트를 거친 뒤 `StealthyFetcher(solve_cloudflare=True)` (5단) |
 | 셀렉터 매칭 실패 | `adaptive=True`로 자가 치유 시도. 재실패 시 정찰 재실행 |
 | 페이지 구조 완전 변경 | 정찰 재실행 → profile.json의 selectors 갱신 |
-| JS 렌더링 실패 | `plain_dynamic`(3단)으로 에스컬레이션. 받는 인자는 `network_idle`·`page_action`·`wait_selector`·`timeout`·`headless` 뿐이다 |
-| 네트워크 타임아웃 | 3회 재시도 후 해당 페이지 스킵 + 로그 |
+| JS 렌더링 실패 | `plain_dynamic`(3단)으로 에스컬레이션. 받는 인자는 `network_idle`·`page_action`·`wait_selector`·`timeout`·`headless`·`retries`·`retry_delay` 뿐이다 |
+| 네트워크 타임아웃 | 3회 재시도 후 해당 페이지 스킵 + 로그 (1~3단 모두 기본 `retries=3` = 총 시도 수. 3단은 시도마다 새 브라우저, 다음 칸으로 자동으로 넘어가지 않는다) |
 | **수집 데이터 0건** | **즉시 중단, 사용자 보고** (계속 시도하면 ban 위험) |
 | Spider 중단 (Ctrl+C) | `crawldir`에서 자동 체크포인트, 재실행 시 이어서 수집 |
 

@@ -9,19 +9,19 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `d8725b593c8ff1e53e8d6cfc0e6cc41c2e1e2c55cfc4c666ca5501776fda6199`
+- 입력 다이제스트: `28a4066aba94e2853184f1d873854757ce3b7998973fad506cb23b178df754db`
 
 ## 상태 한 줄 요약
 
 - 활성 작업: **PY311-001** — 계약 `docs/task-contracts/PY311-001.md`
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `VERIFY` / dirty=`False`
-- 검증 커밋: `5fc20cb`
-- 작업 도구: **codex/gpt-6.1-sol (reasoning high) · opencode-go/deepseek-v4.1-flash#max · grok-4.7 (xhigh)**
+- 검증 커밋: `497ce5b`
+- 작업 도구: **codex/gpt-6.1-sol (reasoning high) · grok-4.7 (xhigh) — opencode-go/deepseek-v4.1-flash#max 는 2회 모두 판정 없이 종료(exit 1)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `a513ecc` · 브랜치 `chore/rev9-dep002-lowgaps`
+측정 시점 HEAD: `497ce5b` · 브랜치 `chore/gaps-001`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 681 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 711 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,18 +39,18 @@
 
 ## 이번 세션에 한 일
 
+- 497ce5b chore(gaps-001): 독립 리뷰 결과·갭·종료 분류 기록
+- 021c919 test(requirements): certifi 하한을 제약식에서 직접 읽는다 — 표본 밖 rc2·안전한 범위 오판 (독립 리뷰 LOW)
+- c7bfa2c docs(gaps-001): 평가 문서 후속 기록과 조각 갭 목록 정리
+- 6352199 fix(bootstrap): 이미 설치됨 판정에 설치판·제약식 대조 — 0.4.15 venv 가 자동 갱신되지 않던 경로 (GAPS-001)
+- db55f23 test(requirements): certifi 하한을 packaging 의미 검사로 — 마커·rc 하한·중복·만족 불가 범위 거부 (GAPS-001)
+- 97fc86d fix(pii): 국제 전화번호가 뒤 숫자 묶음 때문에 15자리를 넘으면 구분자 자리에서 다시 센다 (GAPS-001)
+- 0b19722 fix(utils): plain_dynamic 에 retries·retry_delay — 1·2단·옛 3단과 같은 3회 시도, 위장 차단·반환형 고정 시험 (GAPS-001)
+- e280c4f chore(plan): GAPS-001 조각 계약 — DEP-002 LOW 갭 정리(3단 재시도·국제 전화 미탐·certifi 검사·bootstrap 판 확인)
+- 623a1fd Merge pull request #19 from joonake9644/chore/rev9-dep002-lowgaps
+- dc7fe90 chore(plan): REV-9 — DEP-002 LOW 갭 정리(GAPS-001)를 과제로 추가
 - a513ecc Merge pull request #18 from joonake9644/chore/rev8-dep002-done
 - eb70233 chore(plan): REV-8 — DEP-002 완료 표시
-- f633f83 Merge pull request #17 from joonake9644/chore/dep-002
-- bf66e99 chore(harness): DEP-002 종료 분류·독립 리뷰 기록과 세션 핸드오프 생성
-- 5fc20cb docs(utils): plain_dynamic 헤더 출처 설명 정정 — 옛 3단은 첫 응답, 새 3단은 마지막 응답 (재확인 리뷰 LOW)
-- 5fdf87b fix(utils): plain_dynamic 을 옛 3단 의미에 맞춤 — networkidle·대기 순서·최종 응답·쿠키 (독립 리뷰)
-- be397b9 docs(skill): scrapling 0.5 — 스킬 정본의 DynamicFetcher 지시를 plain_dynamic 으로 옮김 (HCG-055)
-- 8ff7933 feat(deps): scrapling 0.5.1 — 사다리 3단 plain_dynamic 을 playwright 직접 호출로 이관
-- 3720e8d chore(plan): DEP-002 조각 계약 — scrapling 0.5.1 판 올림과 사다리 3단 대체 설계
-- 43d8df6 Merge pull request #16 from joonake9644/chore/rev7-dep001-done
-- 9c60685 chore(plan): REV-7 — DEP-001 완료 표시와 DEP-002(scrapling 0.5 판 올림) 추가
-- 2a60a8a Merge pull request #15 from joonake9644/chore/dep-001
 
 ## 남은 것 / 다음 세션
 

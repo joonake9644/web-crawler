@@ -221,7 +221,75 @@ def test_scrapling_has_upper_bound():
     )
 
 
-_CERTIFI_SAFE = (2026, 10, 19)
+
+
+_CERTIFI_SAFE_VERSION = "2026.10.19"
+
+
+def _certifi_bound_problem(text: str) -> str | None:
+    """requirements 본문에서 certifi 하한 문제를 의미로 찾는다. 없으면 None(GAPS-001).
+
+    정규식으로 `>=` 숫자만 읽으면 환경 마커·사전 릴리스 하한·두 번 선언·만족 불가 범위를 놓친다.
+    packaging 으로 선언을 해석해 ① 정확히 한 번 ② 마커 없음 ③ 2026.10.19 미만(사전 릴리스 포함)을
+    하나도 허용하지 않음 ④ 그 이상은 허용함을 본다.
+    """
+    from packaging.requirements import Requirement
+    from packaging.utils import canonicalize_name
+
+    found = []
+    for raw in text.replace("\\\n", " ").splitlines():
+        stripped = raw.split("#", 1)[0].strip()
+        if not stripped or stripped.startswith("-"):
+            continue
+        req = Requirement(stripped)
+        if canonicalize_name(req.name) == "certifi":
+            found.append(req)
+    if len(found) != 1:
+        return f"certifi 선언이 {len(found)}개입니다 — 정확히 한 번 선언해야 합니다"
+    req = found[0]
+    if req.marker is not None:
+        return f"certifi 선언에 환경 마커({req.marker})가 붙어 일부 환경에서만 적용됩니다"
+    from packaging.version import Version
+
+    safe = Version(_CERTIFI_SAFE_VERSION)
+    # 하한은 표본 판이 아니라 제약식 자체에서 읽는다(독립 리뷰 LOW: 표본 밖 rc2 를 놓쳤다).
+    # 하한 역할을 하는 절(>=·>·~=·와일드카드 없는 ==) 가운데 하나라도 2026.10.19 이상이어야 한다.
+    bounds = [Version(spec.version) for spec in req.specifier
+              if spec.operator in (">=", ">", "~=", "==", "===") and not spec.version.endswith("*")]
+    if not any(b >= safe for b in bounds):
+        return f"certifi 제약식 {str(req.specifier)!r} 이 2026.10.19 미만 판을 허용합니다"
+    # 만족 가능성: 경계 판들(과 안전 판) 가운데 하나라도 제약식을 만족해야 한다.
+    candidates = {safe, *bounds} | {Version(f"{b.major}.{b.minor}.{b.micro}.1") for b in bounds}
+    if not any(req.specifier.contains(v) for v in candidates):
+        return f"certifi 제약식 {str(req.specifier)!r} 을 만족하는 판이 없습니다"
+    return None
+
+
+@pytest.mark.parametrize("text", [
+    "certifi>=2026.10.19; python_version < '3'\n",          # 환경 마커로 어디에도 적용되지 않는다
+    "certifi>=2026.10.19rc1\n",                              # 사전 릴리스 하한 — 2026.10.19 보다 낮다
+    "certifi>=2026.10.19\ncertifi>=2026.7.22\n",              # 두 번 선언
+    "certifi>=2026.7.22\ncertifi>=2026.10.19\n",
+    "certifi \\\n    >=2026.7.22\n",                         # 이어진 줄
+    "certifi>=2026.10.19,<2026.10.19\n",                     # 만족하는 판이 없다
+    "certifi==2026.7.22\n",
+    "certifi>=2026.10.19rc2\n",                              # 표본에 없던 사전 릴리스(독립 리뷰 LOW)
+    "certifi==2026.*\n",
+    "certifi>=2026.10.19 ; sys_platform == 'win32'\n",
+    "certifi\n",
+])
+def test_certifi_bound_check_rejects_bypass_forms(text):
+    """GAPS-001(DEP-001 넘김) — 하한 검사가 우회 형태를 통과시키면 안 된다."""
+    assert _certifi_bound_problem(text), f"우회 통과: {text!r}"
+
+
+@pytest.mark.parametrize("text", [
+    "certifi>=2026.10.19\n",
+    "certifi>=2026.10.24,<2027\n",                           # 안전하고 만족 가능한 범위(독립 리뷰 LOW)
+    "certifi~=2026.10.19\n",
+])
+def test_certifi_bound_check_accepts_safe_forms(text):
+    assert _certifi_bound_problem(text) is None
 
 
 def test_certifi_has_safe_lower_bound():
@@ -231,15 +299,8 @@ def test_certifi_has_safe_lower_bound():
     경량 그리드(curl_cffi)의 기본 CA 묶음이라, 하한이 없으면 옛 venv 가 그 루트를 계속 믿는다.
     2026.10.18 은 emSign 루트를 전부 뺐고 2026.10.19 는 영향 없는 루트를 되살렸다(권장 판).
     """
-    constraint = _constraint("certifi")
-    match = re.search(r">=\s*(\d+(?:\.\d+)*)", constraint.split(";", 1)[0])
-    assert match, (
-        f"certifi 에 하한이 없습니다 (제약식={constraint!r}) — "
-        "GHSA-6q48-6c7w-9gw2 를 고친 판을 강제하려면 `certifi>=2026.10.19` 가 필요합니다"
-    )
-    assert _release(match.group(1)) >= _CERTIFI_SAFE, (
-        f"certifi 하한 {match.group(1)} 이 2026.10.19 보다 낮습니다 (GHSA-6q48-6c7w-9gw2)"
-    )
+    problem = _certifi_bound_problem(REQUIREMENTS.read_text(encoding="utf-8"))
+    assert problem is None, f"{problem} (GHSA-6q48-6c7w-9gw2 — `certifi>=2026.10.19` 가 필요합니다)"
 
 
 def test_protego_comment_is_true():

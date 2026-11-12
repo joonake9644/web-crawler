@@ -71,9 +71,44 @@ def py_deps_ready():
         import patchright  # noqa: F401
         import browserforge  # noqa: F401
         import msgspec  # noqa: F401
-        return True
     except Exception:
         return False
+    return not requirements_unsatisfied()
+
+
+def requirements_unsatisfied():
+    """requirements.txt 선언 중 설치판이 제약식에 맞지 않는 것(GAPS-001).
+
+    import 만 보면 scrapling 0.4.15 venv 도 준비됨으로 판정해 `pip install -r` 을 건너뛰었다.
+    환경 마커가 이 환경에 해당하지 않는 선언은 건너뛴다. packaging 을 쓸 수 없으면 판정할 수
+    없으므로 「맞지 않음」으로 보고 설치를 돌린다.
+    """
+    import importlib.metadata as md
+    try:
+        from packaging.requirements import Requirement
+    except Exception:
+        return ["packaging 없음 — 설치판을 대조할 수 없다"]
+    problems = []
+    text = (REPO / "requirements.txt").read_text(encoding="utf-8").replace("\\\n", " ")
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line or line.startswith("-"):
+            continue
+        try:
+            req = Requirement(line)
+        except Exception:
+            problems.append(f"해석 실패: {line}")
+            continue
+        if req.marker is not None and not req.marker.evaluate():
+            continue
+        try:
+            installed = md.version(req.name)
+        except md.PackageNotFoundError:
+            problems.append(f"{req.name} 미설치")
+            continue
+        if not req.specifier.contains(installed, prereleases=True):
+            problems.append(f"{req.name} {installed} 가 {req.specifier} 에 맞지 않음")
+    return problems
 
 
 def scrapling_exe():
@@ -122,7 +157,7 @@ def agent_browser_ready():
 def do_python_deps(force, verbose_pip):
     stage("1/4 Python deps")
     if not force and py_deps_ready():
-        log("  [SKIP] 이미 설치됨 (scrapling[fetchers] 등 import 확인)")
+        log("  [SKIP] 이미 설치됨 (scrapling[fetchers] 등 import·설치판 제약 확인)")
         return True, None
     req = REPO / "requirements.txt"
     debug = f"{_py_disp()} -m pip install -r requirements.txt --progress-bar off -v"

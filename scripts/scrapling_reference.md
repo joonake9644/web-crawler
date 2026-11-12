@@ -116,6 +116,8 @@ page = plain_dynamic("https://example.com", network_idle=True)
 - `wait_selector="..."` — `page_action` **다음에**, 이 선택자가 DOM 에 붙을 때까지(`attached`, 숨은 요소 포함) 대기
 - `timeout=30000` — 밀리초
 - `headless=True` — GUI 없이 실행
+- `retries=3` — 총 시도 수(1·2단·옛 3단과 같은 뜻, 1 이하면 한 번). 시도마다 새 브라우저로 처음부터 렌더하고, 마지막 실패는 그대로 올린다
+- `retry_delay=1` — 실패한 시도 뒤 쉬는 초
 - `google_search=True` 는 가짜 `Referer` 를 붙이는 손잡이라 거부한다
 
 반환값: `.status`·`.reason`·`.headers`(`set-cookie` 포함)는 `page_action` 뒤 **마지막 메인 문서 응답**에서, `.cookies` 는 브라우저 쿠키 전체 레코드의 튜플(`name`·`value`·`domain`·`path` …)이다 — status·쿠키는 옛 3단(scrapling 0.4 `DynamicFetcher`)과 같고, 헤더는 옛 3단(첫 응답)과 달리 status 와 같은 마지막 응답에서 읽는다.
