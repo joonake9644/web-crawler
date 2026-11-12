@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `28a4066aba94e2853184f1d873854757ce3b7998973fad506cb23b178df754db`
+- 입력 다이제스트: `01c446784e054e4d02685f1d1d91b0b59fa52df3fe602d2a2dddd54da5954d23`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `497ce5b` · 브랜치 `chore/gaps-001`
+측정 시점 HEAD: `33e21da` · 브랜치 `chore/rev10-gaps001-done`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- 33e21da Merge pull request #20 from joonake9644/chore/gaps-001
+- e9c7d22 chore(harness): GAPS-001 독립 리뷰 기록과 세션 핸드오프 생성
 - 497ce5b chore(gaps-001): 독립 리뷰 결과·갭·종료 분류 기록
 - 021c919 test(requirements): certifi 하한을 제약식에서 직접 읽는다 — 표본 밖 rc2·안전한 범위 오판 (독립 리뷰 LOW)
 - c7bfa2c docs(gaps-001): 평가 문서 후속 기록과 조각 갭 목록 정리
@@ -49,8 +51,6 @@
 - e280c4f chore(plan): GAPS-001 조각 계약 — DEP-002 LOW 갭 정리(3단 재시도·국제 전화 미탐·certifi 검사·bootstrap 판 확인)
 - 623a1fd Merge pull request #19 from joonake9644/chore/rev9-dep002-lowgaps
 - dc7fe90 chore(plan): REV-9 — DEP-002 LOW 갭 정리(GAPS-001)를 과제로 추가
-- a513ecc Merge pull request #18 from joonake9644/chore/rev8-dep002-done
-- eb70233 chore(plan): REV-8 — DEP-002 완료 표시
 
 ## 남은 것 / 다음 세션
 
