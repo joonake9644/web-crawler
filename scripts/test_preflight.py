@@ -53,9 +53,10 @@ def test_http_check_verdict_by_status(monkeypatch, status, expected):
     assert _statuses() == [(expected, "HTTP fetch (httpbin)")]
 
 
-def test_http_check_exception_is_warn(monkeypatch):
+@pytest.mark.parametrize("error", [OSError("연결 거부"), TimeoutError()])
+def test_http_check_exception_is_warn(monkeypatch, error):
     def _raise(url, **kw):
-        raise OSError("연결 거부")
+        raise error
 
     monkeypatch.setattr(utils, "plain_get", _raise)
     preflight.check_http_fetch()

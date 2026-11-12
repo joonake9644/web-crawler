@@ -49,5 +49,9 @@
 - LOW(GAPS-001 넘김): DeepSeek 리뷰어가 2회 판정 없이 종료코드 1 로 끝났다(오류 메시지 없음).
 - 닫힘(GAPS-001 뒤 실측): 원본 체크아웃 venv — master 로 옮긴 뒤 `bootstrap.py --core-only` 로 scrapling 0.5.1 갱신, 미충족 0건, 711 통과.
 - LOW(PREFLIGHT-001 시작 전 실측): 원본 체크아웃이 master 에 있으면 프로젝트 훅 `shu-guard:main-commit` 이 세션 기본 폴더의 브랜치만 보고, 다른 작업트리의 기능 브랜치 커밋까지 막는다(REV-11 커밋에서 실측). 이번 조각은 원본 체크아웃 기능 브랜치에서 작업해 피한다.
+- 닫힘(구현 중 실측, 합격 기준 2 직접 위반): 메시지 없는 예외(`TimeoutError()`)에서 `str(e).splitlines()[0]` 가 IndexError 로 preflight 를 죽였다(옛 코드부터). HTTP 점검 한 곳만 RED 확인 뒤 예외 이름으로 대체해 WARN 으로 고침.
+- LOW(구현 중 실측, 범위 밖): 같은 `str(e).splitlines()[0]` 패턴이 다른 점검 5곳(`preflight.py` import·Fetcher 로드·Chromium 실행·agent-browser 2곳)에 남았다. 불변 제약(다른 점검 항목 불변)으로 이번에 고치지 않는다.
+- LOW(구현 중 실측, 범위 밖): `plain_get` 은 위장 헤더 13종·Referer 를 보내지 않지만, UA 가 없으면 scrapling 이 고정 브라우저 UA(`__default_useragent__`, Chrome/149 Windows)를 넣는다(로컬 서버 실측). 사다리 1단이 정직한 UA 를 보낼지는 `plain_get` 범위의 별도 결정이다.
+- LOW(시작 시 원장 경고): `slice start` 가 GAPS-001 남은 갭 18건이 이 목록에 글자 그대로 없다고 경고했다. 닫힌 항목은 뺐고 남은 LOW 는 위에 고쳐 쓴 문구로 옮겼다(내용 누락 없음).
 
 ## 종료 분류

@@ -139,7 +139,7 @@ def check_http_fetch():
             record("CORE", "WARN", "HTTP fetch (httpbin)", f"status={status}")
     except Exception as e:
         record("CORE", "WARN", "HTTP fetch (httpbin)",
-               f"네트워크 제한 가능: {str(e).splitlines()[0][:60]}",
+               f"네트워크 제한 가능: {(str(e).splitlines() or [type(e).__name__])[0][:60]}",
                "오프라인/방화벽이면 정상. 연결 확인 후 재시도")
 
 
