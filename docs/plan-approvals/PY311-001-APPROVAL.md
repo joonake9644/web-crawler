@@ -211,7 +211,7 @@ DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0
 
 ## REV-9 — DEP-002 LOW 갭 정리를 과제로 추가 (2026-11-11)
 
-<!-- ADR-BASIS:carry-forward REV-8 sha256:055c7f63bf35079e7b5d07e1eb2e7cf6097f17e738530192d9a3f167c1aba321 -->
+(REV-9 당시 ADR 기준점 계승 표지: REV-8 sha256 055c7f63bf35079e7b5d07e1eb2e7cf6097f17e738530192d9a3f167c1aba321 — REV-10 에서 아래 표지로 넘겼다)
 
 **사유**: REV-8 로 순서 블록의 미완료 과제가 0개가 되어(`plan show next` → 「순서 첫 미완료 0개」) 어떤 조각도 시작할 수 없다.
 사용자가 다음 과제를 골랐다(입력 「DEP-002 LOW 갭 정리를 다음 과제로 넣는 REV-9 개정안 만들어」, 2026-11-11).
@@ -239,7 +239,7 @@ DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0
 
 <!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001 -->
 
-- [ ] GAPS-001: DEP-002 LOW 갭 정리 — 위 표에서 「고친다」 6건을 고친다. 3단 재시도는 조각 계약에 문서를 동작에 맞출지
+- [x] GAPS-001: DEP-002 LOW 갭 정리 — 위 표에서 「고친다」 6건을 고친다. 3단 재시도는 조각 계약에 문서를 동작에 맞출지
   `plain_dynamic` 에 재시도를 더할지 정해 사용자 승인을 받은 뒤 진행한다(0건 중단 규칙·사다리 A 경계는 그대로). 나머지 5건은 TDD 로
   시험을 먼저 RED 로 확인한 뒤 고친다. 「닫힘·할 일 없음·넘김」 7건은 조각 계약 갭 목록에 사유와 함께 옮긴다.
 
@@ -247,3 +247,22 @@ DEP-002 완료 근거(실측): `requirements.txt` `scrapling[fetchers]>=0.5.1,<0
 
 하지 않는 것: 스킬 정본 `.claude/skills/web-crawler/` 수정(필요해지면 전역 관문 HCG 를 거친다), 사다리 B·통지 게이트 동작 변경,
 playwright·patchright 상한 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결), 저장소 밖 브랜치·작업트리 정리.
+
+## REV-10 — GAPS-001 완료 표시 (2026-11-12)
+
+<!-- ADR-BASIS:carry-forward REV-9 sha256:21c40e6e15416c83adef2069dea67df29014e7ea74b4e0bc5a50c7264d69c3a8 -->
+
+**사유**: 조각 GAPS-001 이 닫혔는데(원장 seq 242, 사용자 입력 `89928b4d462d` 「GAPS-001 종료 승인」, 종료 커밋 e9c7d22, PR #20 병합 `33e21da`)
+REV-9 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 1번으로 보인다. 완료를 계획에 반영한다
+(사용자 입력 「GAPS-001 완료 표시하는 REV-10 개정안 만들어」, 2026-11-12).
+
+**범위·순서·완료 기준은 바꾸지 않는다.** 바뀐 줄은 두 줄뿐이다: GAPS-001 과제 줄의 `[ ]` → `[x]`, 그리고 REV-8 계승 표지를
+설명 문장으로 바꾼 것(표지는 한 본문에 첫 하나만 읽히므로 이 절로 넘겼다). REV-9 순서 블록은 그대로 둔다.
+
+GAPS-001 완료 근거(실측): 「고친다」 6건 모두 RED 확인 뒤 GREEN — `plain_dynamic` `retries=3`·`retry_delay=1`(1·2단·옛 3단과 같은 뜻),
+국제 전화번호 미탐 수정, certifi 하한 packaging 의미 검사, `bootstrap.py` 설치판·제약식 대조, `_forbid_stealth` 확장, 비공개 `Response` 경로 고정.
+`plan slice close` 검사 8건 통과·종료 분류 4칸 0, 3.14.7·3.11.15 모두 711 passed, 독립 리뷰 Codex·Grok PASS(공통 LOW 1건 수정,
+DeepSeek 은 2회 판정 없이 종료 — 계약 갭 목록에 기록).
+
+이 판으로 순서 블록의 미완료 과제는 0개가 된다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. 넘긴 LOW 갭은
+`docs/task-contracts/GAPS-001.slice.md` 「갭 목록」에 있다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
