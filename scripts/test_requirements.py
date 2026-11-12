@@ -223,8 +223,7 @@ def test_scrapling_has_upper_bound():
 
 
 
-_CERTIFI_TOO_LOW = ("0", "2026.7.22", "2026.10.18", "2026.10.19rc1", "2026.10.19.dev0")
-_CERTIFI_SAFE_PROBES = ("2026.10.19", "2026.10.23", "2027.1.1", "2030.1.1")
+_CERTIFI_SAFE_VERSION = "2026.10.19"
 
 
 def _certifi_bound_problem(text: str) -> str | None:
@@ -250,10 +249,18 @@ def _certifi_bound_problem(text: str) -> str | None:
     req = found[0]
     if req.marker is not None:
         return f"certifi 선언에 환경 마커({req.marker})가 붙어 일부 환경에서만 적용됩니다"
-    low = [v for v in _CERTIFI_TOO_LOW if req.specifier.contains(v, prereleases=True)]
-    if low:
-        return f"certifi 제약식 {str(req.specifier)!r} 이 2026.10.19 미만 판({', '.join(low)})을 허용합니다"
-    if not any(req.specifier.contains(v) for v in _CERTIFI_SAFE_PROBES):
+    from packaging.version import Version
+
+    safe = Version(_CERTIFI_SAFE_VERSION)
+    # 하한은 표본 판이 아니라 제약식 자체에서 읽는다(독립 리뷰 LOW: 표본 밖 rc2 를 놓쳤다).
+    # 하한 역할을 하는 절(>=·>·~=·와일드카드 없는 ==) 가운데 하나라도 2026.10.19 이상이어야 한다.
+    bounds = [Version(spec.version) for spec in req.specifier
+              if spec.operator in (">=", ">", "~=", "==", "===") and not spec.version.endswith("*")]
+    if not any(b >= safe for b in bounds):
+        return f"certifi 제약식 {str(req.specifier)!r} 이 2026.10.19 미만 판을 허용합니다"
+    # 만족 가능성: 경계 판들(과 안전 판) 가운데 하나라도 제약식을 만족해야 한다.
+    candidates = {safe, *bounds} | {Version(f"{b.major}.{b.minor}.{b.micro}.1") for b in bounds}
+    if not any(req.specifier.contains(v) for v in candidates):
         return f"certifi 제약식 {str(req.specifier)!r} 을 만족하는 판이 없습니다"
     return None
 
@@ -266,12 +273,23 @@ def _certifi_bound_problem(text: str) -> str | None:
     "certifi \\\n    >=2026.7.22\n",                         # 이어진 줄
     "certifi>=2026.10.19,<2026.10.19\n",                     # 만족하는 판이 없다
     "certifi==2026.7.22\n",
+    "certifi>=2026.10.19rc2\n",                              # 표본에 없던 사전 릴리스(독립 리뷰 LOW)
+    "certifi==2026.*\n",
     "certifi>=2026.10.19 ; sys_platform == 'win32'\n",
     "certifi\n",
 ])
 def test_certifi_bound_check_rejects_bypass_forms(text):
     """GAPS-001(DEP-001 넘김) — 하한 검사가 우회 형태를 통과시키면 안 된다."""
     assert _certifi_bound_problem(text), f"우회 통과: {text!r}"
+
+
+@pytest.mark.parametrize("text", [
+    "certifi>=2026.10.19\n",
+    "certifi>=2026.10.24,<2027\n",                           # 안전하고 만족 가능한 범위(독립 리뷰 LOW)
+    "certifi~=2026.10.19\n",
+])
+def test_certifi_bound_check_accepts_safe_forms(text):
+    assert _certifi_bound_problem(text) is None
 
 
 def test_certifi_has_safe_lower_bound():
