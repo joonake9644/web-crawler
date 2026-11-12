@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `01c446784e054e4d02685f1d1d91b0b59fa52df3fe602d2a2dddd54da5954d23`
+- 입력 다이제스트: `7b741a19c60d6d15d2164b2a6cd3ce8715bdd976058968bbb992c08c2c20a3f4`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `33e21da` · 브랜치 `chore/rev10-gaps001-done`
+측정 시점 HEAD: `6760b8a` · 브랜치 `chore/rev11-preflight-plainget`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- 6760b8a Merge pull request #21 from joonake9644/chore/rev10-gaps001-done
+- ba3c171 chore(plan): REV-10 — GAPS-001 완료 표시
 - 33e21da Merge pull request #20 from joonake9644/chore/gaps-001
 - e9c7d22 chore(harness): GAPS-001 독립 리뷰 기록과 세션 핸드오프 생성
 - 497ce5b chore(gaps-001): 독립 리뷰 결과·갭·종료 분류 기록
@@ -49,8 +51,6 @@
 - 97fc86d fix(pii): 국제 전화번호가 뒤 숫자 묶음 때문에 15자리를 넘으면 구분자 자리에서 다시 센다 (GAPS-001)
 - 0b19722 fix(utils): plain_dynamic 에 retries·retry_delay — 1·2단·옛 3단과 같은 3회 시도, 위장 차단·반환형 고정 시험 (GAPS-001)
 - e280c4f chore(plan): GAPS-001 조각 계약 — DEP-002 LOW 갭 정리(3단 재시도·국제 전화 미탐·certifi 검사·bootstrap 판 확인)
-- 623a1fd Merge pull request #19 from joonake9644/chore/rev9-dep002-lowgaps
-- dc7fe90 chore(plan): REV-9 — DEP-002 LOW 갭 정리(GAPS-001)를 과제로 추가
 
 ## 남은 것 / 다음 세션
 
