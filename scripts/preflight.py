@@ -43,6 +43,11 @@ def record(group, status, name, detail="", fix=""):
         print(f"         다음 명령: {fix}")
 
 
+def _first_line(e, limit):
+    """예외 메시지 첫 줄을 limit 글자로. 메시지가 없으면 예외 이름을 쓴다(GAPS-002 — 빈 메시지 IndexError 방지)."""
+    return (str(e).splitlines() or [type(e).__name__])[0][:limit]
+
+
 def _cmd(name):
     """Windows에선 .cmd 우선 (PowerShell .ps1 실행정책 회피)."""
     if IS_WIN:
@@ -82,7 +87,7 @@ def check_imports():
             record("CORE", "PASS", f"import {mod}")
         except Exception as e:
             ok = False
-            record("CORE", "FAIL", f"import {mod}", str(e).splitlines()[0][:80], fix)
+            record("CORE", "FAIL", f"import {mod}", _first_line(e, 80), fix)
     return ok
 
 
@@ -95,7 +100,7 @@ def check_fetchers():
         record("CORE", "PASS", "Fetcher 클래스 로드", "Fetcher/FetcherSession/StealthyFetcher + utils.plain_dynamic")
         return True
     except Exception as e:
-        record("CORE", "FAIL", "Fetcher 클래스 로드", str(e).splitlines()[0][:80],
+        record("CORE", "FAIL", "Fetcher 클래스 로드", _first_line(e, 80),
                'pip install "scrapling[fetchers]"')
         return False
 
@@ -115,7 +120,7 @@ def check_chromium_launch():
         record("CORE", "PASS", "Playwright Chromium 실행", "headless 기동 OK")
         return True
     except Exception as e:
-        record("CORE", "FAIL", "Playwright Chromium 실행", str(e).splitlines()[0][:100],
+        record("CORE", "FAIL", "Playwright Chromium 실행", _first_line(e, 100),
                _scrapling_install_cmd())
         return False
 
@@ -139,7 +144,7 @@ def check_http_fetch():
             record("CORE", "WARN", "HTTP fetch (httpbin)", f"status={status}")
     except Exception as e:
         record("CORE", "WARN", "HTTP fetch (httpbin)",
-               f"네트워크 제한 가능: {(str(e).splitlines() or [type(e).__name__])[0][:60]}",
+               f"네트워크 제한 가능: {_first_line(e, 60)}",
                "오프라인/방화벽이면 정상. 연결 확인 후 재시도")
 
 
@@ -173,7 +178,7 @@ def check_agent_browser():
         record("AGENT-BROWSER", "FAIL", "agent-browser --version", f"exit {r.returncode}", install_fix)
         return False
     except Exception as e:
-        record("AGENT-BROWSER", "FAIL", "agent-browser --version", str(e).splitlines()[0][:60], install_fix)
+        record("AGENT-BROWSER", "FAIL", "agent-browser --version", _first_line(e, 60), install_fix)
         return False
 
 
@@ -190,7 +195,7 @@ def check_agent_browser_ready():
         else:
             record("AGENT-BROWSER", "WARN", "agent-browser 동작", f"exit {r.returncode}", ab_install)
     except Exception as e:
-        record("AGENT-BROWSER", "WARN", "agent-browser 동작", str(e).splitlines()[0][:60], ab_install)
+        record("AGENT-BROWSER", "WARN", "agent-browser 동작", _first_line(e, 60), ab_install)
 
 
 def main():
