@@ -322,7 +322,7 @@ Referer 가 없다. 네트워크 실행 `preflight.py --core-only` 로그는 `(r
 
 ## REV-13 — preflight 예외 처리 5곳과 bootstrap 「준비 안 됨」 사유 표시를 과제로 추가 (2026-11-13)
 
-<!-- ADR-BASIS:carry-forward REV-12 sha256:bdda30f4e4726a41c9ca6b86102bb35079a2e4bc2c88eb865a1498bfb752f6b4 -->
+(REV-13 당시 ADR 기준점 계승 표지: REV-12 sha256 bdda30f4e4726a41c9ca6b86102bb35079a2e4bc2c88eb865a1498bfb752f6b4 — REV-14 에서 아래 표지로 넘겼다)
 
 **사유**: REV-12 로 순서 블록의 미완료 과제가 0개가 되었다. PREFLIGHT-001·GAPS-001 이 넘긴 LOW 갭 가운데 제품 경로의 작은 결함 두 가지를
 사용자가 다음 과제로 골랐다(입력 「preflight 남은 예외 처리 5곳과 bootstrap 사유 표시를 고치는 과제를 넣는 REV-13 개정안 만들어」, 2026-11-13).
@@ -339,7 +339,7 @@ Referer 가 없다. 네트워크 실행 `preflight.py --core-only` 로그는 `(r
 
 <!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001,PREFLIGHT-001,GAPS-002 -->
 
-- [ ] GAPS-002: preflight·bootstrap 진단 출력 보강 — ① `scripts/preflight.py` 남은 5곳이 메시지 없는 예외에서도 죽지 않고
+- [x] GAPS-002: preflight·bootstrap 진단 출력 보강 — ① `scripts/preflight.py` 남은 5곳이 메시지 없는 예외에서도 죽지 않고
   각 점검의 원래 판정(FAIL 또는 WARN)과 예외 이름을 기록한다. ② `scripts/bootstrap.py` 가 Python 의존성을 다시 설치하기 전에
   「준비 안 됨」 사유(import 실패 모듈·예외, `requirements_unsatisfied()` 문제 목록)를 화면에 찍는다. TDD: 각 동작을 먼저 RED 로 본 뒤 고친다.
 
@@ -348,3 +348,24 @@ CORE FAIL 0, 새 시험이 옛 코드에서 실패하고 새 코드에서 통과
 
 하지 않는 것: 점검 항목·판정 등급·종료 코드 규칙 변경, 설치 동작(언제 `pip install` 을 돌리는지) 변경, 스킬 정본 수정,
 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
+
+## REV-14 — GAPS-002 완료 표시 (2026-11-14)
+
+<!-- ADR-BASIS:carry-forward REV-13 sha256:471ca041f809ee1546516e9fbc51aa02d2ca46ebe6c35a796245544ec29e468e -->
+
+**사유**: 조각 GAPS-002 가 닫혔는데(사용자 입력 `c4ea93ed7707` 「GAPS-002 종료 승인」, 종료 커밋 7301c62, PR #26 병합 `31a4754`)
+REV-13 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 다음 과제로 보인다. 완료를 계획에 반영한다
+(사용자 입력 `77cfa7581119` 「GAPS-002 완료 표시하는 REV-14 개정안 만들어」, 2026-11-14).
+
+**범위·순서·완료 기준은 그대로 둔다.** 이번 판에서 고친 줄은 두 줄이다: GAPS-002 과제 줄의 `[ ]` → `[x]`, 그리고 REV-13 절의 계승 표지를
+설명 문장으로 바꾼 것(한 본문에서 첫 표지 하나만 읽히므로 이 절로 옮겼다). REV-13 순서 블록은 손대지 않는다.
+
+GAPS-002 완료 근거(실측): `scripts/preflight.py` 다섯 점검(import·Fetcher 로드·Chromium 실행·agent-browser 2곳)이 `_first_line()` 을 거쳐
+메시지 없는 예외에도 원래 판정(FAIL·WARN)과 예외 이름을 남긴다. `scripts/bootstrap.py` 는 `py_deps_problems()` 사유를 재설치 전에
+「준비 안 됨: …」 한 줄씩 찍고, 준비 판정과 pip 호출 시점은 옛 코드와 같다. 새 시험 11건은 옛 코드에서 9건 실패(2건은 회귀 보호),
+새 코드에서 모두 통과. `plan slice close` 검사 8건 통과·종료 분류 4칸 0, 독립 리뷰 Codex·Grok PASS(Grok LOW 1건 수정,
+DeepSeek 은 OpenCode Go 구독 없음으로 판정 없이 종료).
+
+REV-14 기준으로 순서 블록에 남은 미완료 과제는 없다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. 넘긴 LOW 갭은
+`docs/task-contracts/GAPS-002.slice.md` 「갭 목록」에 있고, 닫을 때 한 번 실패한 `test_rate_limiter_enforces_delay`(벽시계 경계,
+0.499…초 < 0.5초, 재실행 5회 통과)는 다음 조각 갭 목록에 옮긴다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
