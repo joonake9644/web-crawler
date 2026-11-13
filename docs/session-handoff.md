@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `7b741a19c60d6d15d2164b2a6cd3ce8715bdd976058968bbb992c08c2c20a3f4`
+- 입력 다이제스트: `c50d299c0a019d4993f1a9b9722c2cb8bb228eeae27252cf33fcc0bca5948c1a`
 
 ## 상태 한 줄 요약
 
@@ -17,11 +17,11 @@
 - NORTH STAR: URL과 수집 항목을 받아 사이트를 정찰·대량수집하고 엑셀로 내보내는 범용 웹 크롤링 에이전트 — 문서에 적힌 대로 따라 하면 죽지 않는다 (`GOAL-001`)
 - 단계: `VERIFY` / dirty=`False`
 - 검증 커밋: `497ce5b`
-- 작업 도구: **codex/gpt-6.1-sol (reasoning high) · grok-4.7 (xhigh) — opencode-go/deepseek-v4.1-flash#max 는 2회 모두 판정 없이 종료(exit 1)**
+- 작업 도구: **codex/gpt-6.1-sol (reasoning high) · grok-4.7 (xhigh) — opencode-go/deepseek-v4.1-flash#max 는 판정 없이 종료(exit 1, 「An active OpenCode Go subscription is required」)**
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `6760b8a` · 브랜치 `chore/rev11-preflight-plainget`
+측정 시점 HEAD: `f204e89` · 브랜치 `chore/preflight-001`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 711 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 717 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,6 +39,11 @@
 
 ## 이번 세션에 한 일
 
+- f204e89 fix(preflight): 메시지 없는 예외도 HTTP 점검 WARN 으로 — IndexError 로 죽던 경로
+- 929f6b6 fix(preflight): HTTP 점검을 사다리 1단 plain_get 으로 — 지어낸 Referer·위장 헤더·deprecated 인스턴스 제거
+- 9b7bb51 chore(plan): PREFLIGHT-001 조각 계약 — preflight HTTP 점검을 plain_get 으로
+- c7fa19e Merge pull request #22 from joonake9644/chore/rev11-preflight-plainget
+- 2cd22b8 chore(plan): REV-11 — preflight HTTP 점검을 plain_get 으로 바꾸는 과제(PREFLIGHT-001) 추가
 - 6760b8a Merge pull request #21 from joonake9644/chore/rev10-gaps001-done
 - ba3c171 chore(plan): REV-10 — GAPS-001 완료 표시
 - 33e21da Merge pull request #20 from joonake9644/chore/gaps-001
@@ -46,11 +51,6 @@
 - 497ce5b chore(gaps-001): 독립 리뷰 결과·갭·종료 분류 기록
 - 021c919 test(requirements): certifi 하한을 제약식에서 직접 읽는다 — 표본 밖 rc2·안전한 범위 오판 (독립 리뷰 LOW)
 - c7bfa2c docs(gaps-001): 평가 문서 후속 기록과 조각 갭 목록 정리
-- 6352199 fix(bootstrap): 이미 설치됨 판정에 설치판·제약식 대조 — 0.4.15 venv 가 자동 갱신되지 않던 경로 (GAPS-001)
-- db55f23 test(requirements): certifi 하한을 packaging 의미 검사로 — 마커·rc 하한·중복·만족 불가 범위 거부 (GAPS-001)
-- 97fc86d fix(pii): 국제 전화번호가 뒤 숫자 묶음 때문에 15자리를 넘으면 구분자 자리에서 다시 센다 (GAPS-001)
-- 0b19722 fix(utils): plain_dynamic 에 retries·retry_delay — 1·2단·옛 3단과 같은 3회 시도, 위장 차단·반환형 고정 시험 (GAPS-001)
-- e280c4f chore(plan): GAPS-001 조각 계약 — DEP-002 LOW 갭 정리(3단 재시도·국제 전화 미탐·certifi 검사·bootstrap 판 확인)
 
 ## 남은 것 / 다음 세션
 
@@ -61,7 +61,7 @@
 ## 다음 세션 즉시 시작
 
 ```text
-세션 이어받기. 프로젝트: /Users/joonake/Developer/worktrees/web-crawler/rev5-secintel-dep
+세션 이어받기. 프로젝트: /Users/joonake/Developer/projects/web-crawler
 먼저 docs/session-handoff.md 와 .harness/state.json 을 읽는다.
 그리고 baseline 확인: python -m pytest -q -k "not e2e"  (위 표의 통과 수와 같아야 한다)
 활성 작업: PY311-001 — 계약 docs/task-contracts/PY311-001.md

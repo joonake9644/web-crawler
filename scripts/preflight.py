@@ -120,11 +120,18 @@ def check_chromium_launch():
         return False
 
 
+HTTP_CHECK_URL = "https://httpbin.org/html"
+
+
 def check_http_fetch():
-    """가벼운 HTTP fetch (네트워크 필요). 실패는 WARN — 오프라인/방화벽일 수 있음."""
+    """가벼운 HTTP fetch (네트워크 필요). 실패는 WARN — 오프라인/방화벽일 수 있음.
+
+    사다리 1단 `utils.plain_get` 으로 요청한다 — scrapling 기본값(위장 TLS·위장 헤더·지어낸
+    Referer)을 쓰지 않고, deprecated 인 Fetcher 인스턴스도 만들지 않는다(PREFLIGHT-001).
+    """
     try:
-        from scrapling.fetchers import Fetcher
-        page = Fetcher().get("https://httpbin.org/html")
+        from utils import plain_get
+        page = plain_get(HTTP_CHECK_URL)
         status = getattr(page, "status", None)
         if status == 200:
             record("CORE", "PASS", "HTTP fetch (httpbin)", "status 200")
@@ -132,7 +139,7 @@ def check_http_fetch():
             record("CORE", "WARN", "HTTP fetch (httpbin)", f"status={status}")
     except Exception as e:
         record("CORE", "WARN", "HTTP fetch (httpbin)",
-               f"네트워크 제한 가능: {str(e).splitlines()[0][:60]}",
+               f"네트워크 제한 가능: {(str(e).splitlines() or [type(e).__name__])[0][:60]}",
                "오프라인/방화벽이면 정상. 연결 확인 후 재시도")
 
 
