@@ -288,7 +288,7 @@ preflight 가 지어낸 출처를 붙인 요청을 보내는 것을 실측했고
 | 다른 호출처 | 시험 밖 `scripts/*.py` 에서 scrapling 기본값으로 직접 요청하는 곳은 이 한 곳(`git grep`) |
 | 시험 | preflight 용 시험 파일이 없다 |
 
-<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001,PREFLIGHT-001 -->
+(REV-11 당시 순서 블록: SEC001-CLOSE → SECINTEL-001 → DEP-001 → DEP-002 → GAPS-001 → PREFLIGHT-001 — REV-13 에서 아래 새 블록으로 옮겼다)
 
 - [x] PREFLIGHT-001: preflight HTTP 점검을 사다리 1단으로 — `check_http_fetch()` 가 `utils.plain_get` 을 부르게 바꿔
   위장 기본값(`impersonate`·`stealthy_headers`, 지어낸 Referer)을 끄고 `Fetcher()` 인스턴스 경고를 없앤다. TDD: 네트워크 없이
@@ -302,7 +302,7 @@ CORE FAIL 0, 네트워크가 되는 환경에서 `scripts/preflight.py --core-on
 
 ## REV-12 — PREFLIGHT-001 완료 표시 (2026-11-13)
 
-<!-- ADR-BASIS:carry-forward REV-11 sha256:d35feccf7687a1a04686e562f1879b1d69fca32731ba795ba60e5d0461ed9716 -->
+(REV-12 당시 ADR 기준점 계승 표지: REV-11 sha256 d35feccf7687a1a04686e562f1879b1d69fca32731ba795ba60e5d0461ed9716 — REV-13 에서 아래 표지로 넘겼다)
 
 **사유**: 조각 PREFLIGHT-001 이 닫혔는데(사용자 입력 `440947457398` 「PREFLIGHT-001 종료 승인」, 종료 커밋 e922a87, PR #23 병합 `316f95d`)
 REV-11 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 다음 과제로 보인다. 완료를 계획에 반영한다
@@ -319,3 +319,32 @@ Referer 가 없다. 네트워크 실행 `preflight.py --core-only` 로그는 `(r
 
 이 판으로 순서 블록의 미완료 과제는 다시 0개다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. 넘긴 LOW 갭은
 `docs/task-contracts/PREFLIGHT-001.slice.md` 「갭 목록」에 있다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
+
+## REV-13 — preflight 예외 처리 5곳과 bootstrap 「준비 안 됨」 사유 표시를 과제로 추가 (2026-11-13)
+
+<!-- ADR-BASIS:carry-forward REV-12 sha256:bdda30f4e4726a41c9ca6b86102bb35079a2e4bc2c88eb865a1498bfb752f6b4 -->
+
+**사유**: REV-12 로 순서 블록의 미완료 과제가 0개가 되었다. PREFLIGHT-001·GAPS-001 이 넘긴 LOW 갭 가운데 제품 경로의 작은 결함 두 가지를
+사용자가 다음 과제로 골랐다(입력 「preflight 남은 예외 처리 5곳과 bootstrap 사유 표시를 고치는 과제를 넣는 REV-13 개정안 만들어」, 2026-11-13).
+
+**REV-1~REV-12 의 범위·완료 기준은 그대로 둔다.** 고친 줄은 두 줄이다: REV-11 순서 블록과 REV-12 계승 표지를 설명 문장으로 바꾼 것이다
+(둘 다 한 본문에서 첫 하나만 읽히므로 이 절로 옮겼다). 끝난 과제도 새 순서 블록에 남긴다.
+
+출발 실측(2026-11-13, master `6798421`):
+
+| 대상 | REV-13 출발 시점 값 |
+|:---|:---|
+| preflight 예외 처리 | `scripts/preflight.py` 85·98·118·176·193행이 `str(e).splitlines()[0]` 를 그대로 쓴다. 메시지 없는 예외가 오면 IndexError 로 preflight 가 죽는다 — `check_agent_browser_ready()` 에 빈 `OSError()` 를 넣어 재현했다. HTTP 점검 한 곳은 PREFLIGHT-001 에서 예외 이름으로 대체해 고쳤다 |
+| bootstrap 사유 | `scripts/bootstrap.py:159` `do_python_deps()` 는 `py_deps_ready()` 가 거짓이면 이유 없이 `pip install -r` 로 넘어간다. `py_deps_ready()` 는 import 실패를 삼키고, `requirements_unsatisfied()` 가 돌려준 문제 목록도 화면에 나오지 않는다 |
+
+<!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001,PREFLIGHT-001,GAPS-002 -->
+
+- [ ] GAPS-002: preflight·bootstrap 진단 출력 보강 — ① `scripts/preflight.py` 남은 5곳이 메시지 없는 예외에서도 죽지 않고
+  각 점검의 원래 판정(FAIL 또는 WARN)과 예외 이름을 기록한다. ② `scripts/bootstrap.py` 가 Python 의존성을 다시 설치하기 전에
+  「준비 안 됨」 사유(import 실패 모듈·예외, `requirements_unsatisfied()` 문제 목록)를 화면에 찍는다. TDD: 각 동작을 먼저 RED 로 본 뒤 고친다.
+
+GAPS-002 완료 판정(검사 명령): 실행 계약 6종과 3.11 환경 `pytest -q -k "not e2e"` 가 모두 exit 0, `scripts/preflight.py --core-only --no-network`
+CORE FAIL 0, 새 시험이 옛 코드에서 실패하고 새 코드에서 통과한다.
+
+하지 않는 것: 점검 항목·판정 등급·종료 코드 규칙 변경, 설치 동작(언제 `pip install` 을 돌리는지) 변경, 스킬 정본 수정,
+하네스 파일 변경(applygo36 ADR-019 하네스 동결).
