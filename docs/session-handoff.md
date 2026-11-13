@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `c50d299c0a019d4993f1a9b9722c2cb8bb228eeae27252cf33fcc0bca5948c1a`
+- 입력 다이제스트: `7be220b8aea992228237df6908fcd75967e6926fadc89cead7ae06793447a7ec`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `f204e89` · 브랜치 `chore/preflight-001`
+측정 시점 HEAD: `316f95d` · 브랜치 `chore/rev12-preflight-done`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -39,6 +39,8 @@
 
 ## 이번 세션에 한 일
 
+- 316f95d Merge pull request #23 from joonake9644/chore/preflight-001
+- e922a87 test(preflight): 판정 시험이 plain_get 호출까지 확인 — 독립 리뷰 LOW 반영, 종료 분류·인계서
 - f204e89 fix(preflight): 메시지 없는 예외도 HTTP 점검 WARN 으로 — IndexError 로 죽던 경로
 - 929f6b6 fix(preflight): HTTP 점검을 사다리 1단 plain_get 으로 — 지어낸 Referer·위장 헤더·deprecated 인스턴스 제거
 - 9b7bb51 chore(plan): PREFLIGHT-001 조각 계약 — preflight HTTP 점검을 plain_get 으로
@@ -49,8 +51,6 @@
 - 33e21da Merge pull request #20 from joonake9644/chore/gaps-001
 - e9c7d22 chore(harness): GAPS-001 독립 리뷰 기록과 세션 핸드오프 생성
 - 497ce5b chore(gaps-001): 독립 리뷰 결과·갭·종료 분류 기록
-- 021c919 test(requirements): certifi 하한을 제약식에서 직접 읽는다 — 표본 밖 rc2·안전한 범위 오판 (독립 리뷰 LOW)
-- c7bfa2c docs(gaps-001): 평가 문서 후속 기록과 조각 갭 목록 정리
 
 ## 남은 것 / 다음 세션
 

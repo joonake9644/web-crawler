@@ -269,7 +269,7 @@ DeepSeek 은 2회 판정 없이 종료 — 계약 갭 목록에 기록).
 
 ## REV-11 — preflight HTTP 점검을 사다리 1단 `plain_get` 으로 바꾸는 과제 추가 (2026-11-12)
 
-<!-- ADR-BASIS:carry-forward REV-10 sha256:94578e3ee87512768db33f7ccc394466ddf4b085108d4c767699446c68e0de2e -->
+(REV-11 당시 ADR 기준점 계승 표지: REV-10 sha256 94578e3ee87512768db33f7ccc394466ddf4b085108d4c767699446c68e0de2e — REV-12 에서 아래 표지로 넘겼다)
 
 **사유**: REV-10 으로 순서 블록의 미완료 과제가 0개가 되었다. 원본 체크아웃 venv 를 bootstrap 으로 갱신하는 중에
 preflight 가 지어낸 출처를 붙인 요청을 보내는 것을 실측했고, 사용자가 이를 다음 과제로 골랐다
@@ -290,7 +290,7 @@ preflight 가 지어낸 출처를 붙인 요청을 보내는 것을 실측했고
 
 <!-- PLAN-ORDER: SEC001-CLOSE,SECINTEL-001,DEP-001,DEP-002,GAPS-001,PREFLIGHT-001 -->
 
-- [ ] PREFLIGHT-001: preflight HTTP 점검을 사다리 1단으로 — `check_http_fetch()` 가 `utils.plain_get` 을 부르게 바꿔
+- [x] PREFLIGHT-001: preflight HTTP 점검을 사다리 1단으로 — `check_http_fetch()` 가 `utils.plain_get` 을 부르게 바꿔
   위장 기본값(`impersonate`·`stealthy_headers`, 지어낸 Referer)을 끄고 `Fetcher()` 인스턴스 경고를 없앤다. TDD: 네트워크 없이
   `plain_get` 경유와 요청 인자(위장 끔)를 확인하는 시험을 먼저 RED 로 본 뒤 고친다. 판정(200=PASS, 그 밖·예외=WARN)과
   `--no-network` 동작은 그대로다.
@@ -299,3 +299,23 @@ preflight 가 지어낸 출처를 붙인 요청을 보내는 것을 실측했고
 CORE FAIL 0, 네트워크가 되는 환경에서 `scripts/preflight.py --core-only` 로그에 `referer: https://www.google.com/` 이 없다.
 
 하지 않는 것: preflight 의 다른 점검 항목 변경, 스킬 정본 수정, 사다리·통지 게이트 동작 변경, 하네스 파일 변경(applygo36 ADR-019 하네스 동결).
+
+## REV-12 — PREFLIGHT-001 완료 표시 (2026-11-13)
+
+<!-- ADR-BASIS:carry-forward REV-11 sha256:d35feccf7687a1a04686e562f1879b1d69fca32731ba795ba60e5d0461ed9716 -->
+
+**사유**: 조각 PREFLIGHT-001 이 닫혔는데(사용자 입력 `440947457398` 「PREFLIGHT-001 종료 승인」, 종료 커밋 e922a87, PR #23 병합 `316f95d`)
+REV-11 과제 줄이 `[ ]` 로 남아 `plan show next` 가 이 과제를 계속 다음 과제로 보인다. 완료를 계획에 반영한다
+(사용자 입력 「PREFLIGHT-001 완료 표시하는 REV-12 개정안 만들어」, 2026-11-13).
+
+**범위·순서·완료 기준은 그대로 둔다.** 고친 줄은 두 줄이다: PREFLIGHT-001 과제 줄의 `[ ]` → `[x]`, 그리고 REV-11 절의 계승 표지를
+설명 문장으로 바꾼 것(한 본문에서 첫 표지 하나만 읽히므로 이 절로 옮겼다). REV-11 순서 블록은 손대지 않는다.
+
+PREFLIGHT-001 완료 근거(실측): `check_http_fetch()` 가 `utils.plain_get(HTTP_CHECK_URL)` 로 요청한다. 새 `scripts/test_preflight.py` 6건은
+옛 `preflight.py` 에서 6건 모두 단언 실패, 새 코드에서 6건 통과. 로컬 서버가 받은 요청 헤더는 `Host`·`Accept-Encoding`·`User-Agent` 셋뿐이고
+Referer 가 없다. 네트워크 실행 `preflight.py --core-only` 로그는 `(referer: None)`·`[PASS] HTTP fetch (httpbin) — status 200`, deprecated 0줄.
+메시지 없는 예외에서 IndexError 로 죽던 경로도 WARN 으로 고쳤다(HTTP 점검 한 곳). `plan slice close` 검사 8건 통과·종료 분류 4칸 0,
+3.14·3.11 모두 717 passed, 독립 리뷰 Codex·Grok PASS(공통 LOW 1건 수정, DeepSeek 은 OpenCode Go 구독 없음으로 판정 없이 종료).
+
+이 판으로 순서 블록의 미완료 과제는 다시 0개다. 다음 과제는 사용자가 정해 새 개정으로 넣는다. 넘긴 LOW 갭은
+`docs/task-contracts/PREFLIGHT-001.slice.md` 「갭 목록」에 있다. PY311-001 의 상시 조건(두 패키지 모두 1.65 출시 시 상한을 함께 올림)은 그대로다.
