@@ -9,7 +9,7 @@
       "status": "passed",
       "model": "codex/gpt-6.1-sol (reasoning high) · grok-4.7 (xhigh) — opencode-go/deepseek-v4.1-flash#max 는 판정 없이 종료(exit 1, 「An active OpenCode Go subscription is required」)",
       "findings_fixed": 1,
-      "note": "2026-11-12 세션(PREFLIGHT-001, REV-11 과제): 9b7bb51..929f6b6 독립 리뷰 Codex PASS·Grok PASS. 공통 LOW 1건(503·예외 판정 시험이 옛 코드에서도 통과)은 plain_get 호출 확인을 더해 옛 코드 6건 실패·새 코드 6건 통과로 고침. 구현 중 실측한 빈 메시지 예외 IndexError 는 HTTP 점검 한 곳만 RED 확인 뒤 고침. 결과: check_http_fetch 가 utils.plain_get(HTTP_CHECK_URL) 사용, 네트워크 실행 로그 (referer: None)·deprecated 0줄. 남은 LOW 는 docs/task-contracts/PREFLIGHT-001.slice.md 갭 목록."
+      "note": "2026-11-13 세션(GAPS-002, REV-13 과제): 17e0d3e..7940778 독립 리뷰 Codex PASS·Grok PASS. Grok LOW 1건(미설치 사유 시험의 pip 호출 횟수 미확인)은 1회 단언을 더해 고침, 남은 LOW 2건은 docs/task-contracts/GAPS-002.slice.md 갭 목록. 결과: preflight 다섯 점검이 빈 메시지 예외에도 원래 판정·예외 이름을 남기고, bootstrap 이 재설치 전 「준비 안 됨」 사유를 찍는다. 새 시험 11건은 옛 코드에서 9건 실패(2건은 회귀 보호)."
     }
   }
 }

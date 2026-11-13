@@ -79,10 +79,11 @@ def test_reason_for_version_mismatch_is_shown(monkeypatch, capsys):
 
 
 def test_reason_for_missing_distribution_is_shown(monkeypatch, capsys):
-    _fake_pip(monkeypatch)
+    calls = _fake_pip(monkeypatch)
     _fake_versions(monkeypatch, {"certifi": None})
     bootstrap.do_python_deps(False, False)
     assert "준비 안 됨: certifi 미설치" in capsys.readouterr().out
+    assert len(calls) == 1
 
 
 def test_reason_for_import_failure_is_shown(monkeypatch, capsys):

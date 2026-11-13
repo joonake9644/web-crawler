@@ -43,16 +43,25 @@
 - LOW(GAPS-001 넘김): Chromium·curl_cffi 내장 libcurl 의 Brotli 판(KEV CVE-2026-111497) 미확인. 다음 보안 인텔 수집에서 잰다.
 - LOW(GAPS-001 넘김): 로컬 브랜치 `chore/plan-harness-v2-1104` 의 커밋 319dee0(하네스 v2 갱신)·엔진 사본 8f3277 표시 결함 — applygo36 ADR-019 하네스 동결로 정기 점검 대상. 원본 체크아웃은 2026-11-12 master 로 옮겼고 그 브랜치는 보존했다.
 - LOW(GAPS-001 넘김): 병합된 로컬 브랜치·orca 작업트리 barracuda·작업트리 rev5-secintel-dep·`~/.cache/web-crawler-dep001`·`dep002` 정리(사용자 확인 뒤).
-- LOW(GAPS-001 넘김, 독립 리뷰 Grok): `bootstrap.py` 가 「준비 안 됨」 사유를 화면에 찍지 않는다.
+- 닫힘(GAPS-002): `bootstrap.py` 가 「준비 안 됨」 사유를 화면에 찍지 않던 것 — `py_deps_problems()` 사유 목록을 설치 전에 한 줄씩 찍는다(RED 4건 확인 뒤 GREEN).
 - LOW(GAPS-001 넘김, 독립 리뷰 Grok 기록): 점 구분 16자리 `+1234.5678.9012.3456` 이 전화번호 경고를 낸다(설계가 정한 넓히기).
 - LOW(GAPS-001 넘김, PREFLIGHT-001 에서 원인 실측): DeepSeek 리뷰어가 판정 없이 종료코드 1 로 끝난다. 이번 오류 로그 원문은 `An active OpenCode Go subscription is required to use OpenCode Go models.` — OpenCode Go 구독이 없어서다. 구독 여부는 사용자 결정이다.
 - 닫힘(GAPS-001 뒤 실측): 원본 체크아웃 venv — master 로 옮긴 뒤 `bootstrap.py --core-only` 로 scrapling 0.5.1 갱신, 미충족 0건, 711 통과.
 - LOW(PREFLIGHT-001 시작 전 실측): 원본 체크아웃이 master 에 있으면 프로젝트 훅 `shu-guard:main-commit` 이 세션 기본 폴더의 브랜치만 보고, 다른 작업트리의 기능 브랜치 커밋까지 막는다(REV-11 커밋에서 실측). 이번 조각은 원본 체크아웃 기능 브랜치에서 작업해 피한다.
 - 닫힘(구현 중 실측, 합격 기준 2 직접 위반): 메시지 없는 예외(`TimeoutError()`)에서 `str(e).splitlines()[0]` 가 IndexError 로 preflight 를 죽였다(옛 코드부터). HTTP 점검 한 곳만 RED 확인 뒤 예외 이름으로 대체해 WARN 으로 고침.
-- LOW(구현 중 실측, 범위 밖): 같은 `str(e).splitlines()[0]` 패턴이 다른 점검 5곳(`preflight.py` import·Fetcher 로드·Chromium 실행·agent-browser 2곳)에 남았다. 불변 제약(다른 점검 항목 불변)으로 이번에 고치지 않는다.
+- 닫힘(GAPS-002): preflight 다섯 점검(import·Fetcher 로드·Chromium 실행·agent-browser 2곳)이 메시지 없는 예외에서 IndexError 로 죽던 것 — `_first_line()` 로 바꿔 원래 판정과 예외 이름을 남긴다(RED 5건 확인 뒤 GREEN).
 - LOW(구현 중 실측, 범위 밖): `plain_get` 은 위장 헤더 13종·Referer 를 보내지 않지만, UA 가 없으면 scrapling 이 고정 브라우저 UA(`__default_useragent__`, Chrome/149 Windows)를 넣는다(로컬 서버 실측). 사다리 1단이 정직한 UA 를 보낼지는 `plain_get` 범위의 별도 결정이다.
 - LOW(시작 시 원장 경고): `slice start` 가 GAPS-001 남은 갭 18건이 이 목록에 글자 그대로 없다고 경고했다. 닫힌 항목은 뺐고 남은 LOW 는 위에 고쳐 쓴 문구로 옮겼다(내용 누락 없음).
 - 닫힘(독립 리뷰 LOW, Codex·Grok 공통): 503·예외 판정 시험이 옛 코드에서도 통과했다. `plain_get` 호출 확인을 더해 옛 `preflight.py` 에서 6건 모두 실패, 새 코드에서 6건 통과를 실측했다.
 - 이번 조각 대상(시작 시점): 위 「같은 `str(e).splitlines()[0]` 패턴 … 5곳」 과 「`bootstrap.py` 가 「준비 안 됨」 사유를 화면에 찍지 않는다」 두 줄. 닫을 때 닫힘으로 바꾼다.
 
+- 닫힘(독립 리뷰 LOW, Grok): 미설치 사유 시험이 pip 호출 횟수를 확인하지 않던 것 — 1회 단언을 더함.
+- LOW(독립 리뷰, Grok): `bootstrap.py` `py_deps_problems()` 는 첫 import 가 실패해도 나머지 모듈 import 를 계속해 사유를 모두 모은다. 준비 판정·pip 호출은 옛 코드와 같다(리뷰어 80개 조합 대조).
+- LOW(독립 리뷰, Grok): 「해석 실패: <줄>」 사유는 `requirements.txt` 줄 원문을 길이 제한 없이 찍는다. 그 파일은 커밋되는 파일이라 비밀값을 두는 곳이 아니다. 예외 첫 줄(80자)에 경로가 들어 있으면 그대로 보인다.
+- LOW(독립 리뷰 실행): DeepSeek(opencode-go/deepseek-v4.1-flash#max)은 이번에도 「An active OpenCode Go subscription is required」 로 판정 없이 끝났다.
+
 ## 종료 분류
+- missing: 없음
+- partial: 없음
+- contradicts: 없음
+- unrequested: 없음
