@@ -62,18 +62,28 @@ def _py_disp():
 
 
 # ---------------- 상태 점검 ----------------
+_READY_IMPORTS = ("scrapling.fetchers", "openpyxl", "playwright", "curl_cffi", "patchright", "browserforge", "msgspec")
+
+
+def py_deps_problems():
+    """「준비 안 됨」 사유 목록(GAPS-002). 비어 있으면 준비됨이다.
+
+    import 가 하나라도 실패하면 설치판 대조는 하지 않는다(옛 py_deps_ready 와 같은 판정 순서).
+    """
+    problems = []
+    for mod in _READY_IMPORTS:
+        try:
+            __import__(mod)
+        except Exception as e:
+            first = (str(e).splitlines() or [""])[0][:80]
+            problems.append(f"import {mod} 실패 — {type(e).__name__}" + (f": {first}" if first else ""))
+    if problems:
+        return problems
+    return requirements_unsatisfied()
+
+
 def py_deps_ready():
-    try:
-        import scrapling.fetchers  # noqa: F401
-        import openpyxl  # noqa: F401
-        import playwright  # noqa: F401
-        import curl_cffi  # noqa: F401
-        import patchright  # noqa: F401
-        import browserforge  # noqa: F401
-        import msgspec  # noqa: F401
-    except Exception:
-        return False
-    return not requirements_unsatisfied()
+    return not py_deps_problems()
 
 
 def requirements_unsatisfied():
@@ -156,9 +166,15 @@ def agent_browser_ready():
 # ---------------- 단계 ----------------
 def do_python_deps(force, verbose_pip):
     stage("1/4 Python deps")
-    if not force and py_deps_ready():
-        log("  [SKIP] 이미 설치됨 (scrapling[fetchers] 등 import·설치판 제약 확인)")
-        return True, None
+    if force:
+        log("  --force: 준비 여부와 관계없이 다시 설치")
+    else:
+        problems = py_deps_problems()
+        if not problems:
+            log("  [SKIP] 이미 설치됨 (scrapling[fetchers] 등 import·설치판 제약 확인)")
+            return True, None
+        for problem in problems:
+            log(f"  준비 안 됨: {problem}")
     req = REPO / "requirements.txt"
     debug = f"{_py_disp()} -m pip install -r requirements.txt --progress-bar off -v"
     log("  최초 1회는 수 분 걸릴 수 있음 (scrapling[fetchers]: playwright/patchright/curl_cffi 등 휠 다운로드).")

@@ -89,6 +89,7 @@ docs/task-contracts/*
 !docs/task-contracts/DEP-002.slice.md
 !docs/task-contracts/GAPS-001.slice.md
 !docs/task-contracts/PREFLIGHT-001.slice.md
+!docs/task-contracts/GAPS-002.slice.md
 # 방어 보안 자산 — AUTHORIZATION·SCOPE·루프·인텔 브리프(2026-10-31 SEC-001).
 # CLAUDE.md 와 .claude/skills/authorized-defensive-security 가 링크한다. 무시되면 clean clone 에서 끊긴다.
 !docs/security/

@@ -99,3 +99,80 @@ def test_http_check_sends_no_referer_to_real_server(monkeypatch):
     names = {k.lower() for k in seen[0]}
     assert "referer" not in names, seen[0]
     assert _statuses() == [("PASS", "HTTP fetch (httpbin)")]
+
+
+# ---- GAPS-002: 메시지 없는 예외에도 죽지 않고 원래 판정과 예외 이름을 남긴다 ----
+import builtins  # noqa: E402
+
+
+def _fail_import(monkeypatch, target, error):
+    real = builtins.__import__
+
+    def _import(name, *a, **kw):
+        if name == target:
+            raise error
+        return real(name, *a, **kw)
+
+    monkeypatch.setattr(builtins, "__import__", _import)
+
+
+def _all(group):
+    return [(status, name) for g, status, name in preflight._results if g == group]
+
+
+def test_import_check_survives_message_less_error(monkeypatch, capsys):
+    _fail_import(monkeypatch, "openpyxl", ImportError())
+    assert preflight.check_imports() is False
+    assert ("FAIL", "import openpyxl") in _statuses()
+    assert "import openpyxl — ImportError" in capsys.readouterr().out
+
+
+def test_fetcher_load_check_survives_message_less_error(monkeypatch, capsys):
+    _fail_import(monkeypatch, "scrapling.fetchers", ImportError())
+    assert preflight.check_fetchers() is False
+    assert _statuses() == [("FAIL", "Fetcher 클래스 로드")]
+    assert "Fetcher 클래스 로드 — ImportError" in capsys.readouterr().out
+
+
+def test_chromium_check_survives_message_less_error(monkeypatch, capsys):
+    import playwright.sync_api as sync_api
+
+    def _boom():
+        raise RuntimeError()
+
+    monkeypatch.setattr(sync_api, "sync_playwright", _boom)
+    assert preflight.check_chromium_launch() is False
+    assert _statuses() == [("FAIL", "Playwright Chromium 실행")]
+    assert "Playwright Chromium 실행 — RuntimeError" in capsys.readouterr().out
+
+
+def _agent_browser_raises(monkeypatch):
+    monkeypatch.setattr(preflight, "_cmd", lambda name: "/fake/agent-browser")
+
+    def _run(*a, **kw):
+        raise OSError()
+
+    monkeypatch.setattr(preflight, "_run", _run)
+
+
+def test_agent_browser_version_check_survives_message_less_error(monkeypatch, capsys):
+    _agent_browser_raises(monkeypatch)
+    assert preflight.check_agent_browser() is False
+    assert _all("AGENT-BROWSER") == [("FAIL", "agent-browser --version")]
+    assert "agent-browser --version — OSError" in capsys.readouterr().out
+
+
+def test_agent_browser_ready_check_survives_message_less_error(monkeypatch, capsys):
+    _agent_browser_raises(monkeypatch)
+    preflight.check_agent_browser_ready()
+    assert _all("AGENT-BROWSER") == [("WARN", "agent-browser 동작")]
+    assert "agent-browser 동작 — OSError" in capsys.readouterr().out
+
+
+def test_message_keeps_first_line_and_limit(monkeypatch, capsys):
+    message = "첫 줄 " + "가" * 200
+    _fail_import(monkeypatch, "openpyxl", ImportError(message + "\n둘째 줄"))
+    preflight.check_imports()
+    out = capsys.readouterr().out
+    assert f"  [FAIL] import openpyxl — {message[:80]}\n" in out
+    assert "둘째 줄" not in out

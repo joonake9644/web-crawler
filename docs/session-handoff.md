@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `0c14993d68dee4225fcedada55c6339d921d0015149fb01ffffcb7ef55eecf7b`
+- 입력 다이제스트: `08bb6743dd5dfbb0cf0556a38db887c20f5c98a1562b0082a5f1f4a9202dd7fd`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `6798421` · 브랜치 `chore/rev13-preflight-bootstrap-gaps`
+측정 시점 HEAD: `7940778` · 브랜치 `chore/gaps-002`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,7 +31,7 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 717 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 728 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
 | 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
@@ -39,6 +39,10 @@
 
 ## 이번 세션에 한 일
 
+- 7940778 fix(preflight,bootstrap): 빈 메시지 예외에도 진단이 죽지 않고, 재설치 전 「준비 안 됨」 사유를 보인다
+- 17e0d3e chore(plan): GAPS-002 조각 계약 — preflight 예외 처리 5곳·bootstrap 사유 표시
+- 06ffac0 Merge pull request #25 from joonake9644/chore/rev13-preflight-bootstrap-gaps
+- 6f8d0ef chore(plan): REV-13 — preflight 예외 처리 5곳·bootstrap 사유 표시 과제(GAPS-002) 추가
 - 6798421 Merge pull request #24 from joonake9644/chore/rev12-preflight-done
 - a0a4b2a chore(plan): REV-12 — PREFLIGHT-001 완료 표시
 - 316f95d Merge pull request #23 from joonake9644/chore/preflight-001
@@ -47,10 +51,6 @@
 - 929f6b6 fix(preflight): HTTP 점검을 사다리 1단 plain_get 으로 — 지어낸 Referer·위장 헤더·deprecated 인스턴스 제거
 - 9b7bb51 chore(plan): PREFLIGHT-001 조각 계약 — preflight HTTP 점검을 plain_get 으로
 - c7fa19e Merge pull request #22 from joonake9644/chore/rev11-preflight-plainget
-- 2cd22b8 chore(plan): REV-11 — preflight HTTP 점검을 plain_get 으로 바꾸는 과제(PREFLIGHT-001) 추가
-- 6760b8a Merge pull request #21 from joonake9644/chore/rev10-gaps001-done
-- ba3c171 chore(plan): REV-10 — GAPS-001 완료 표시
-- 33e21da Merge pull request #20 from joonake9644/chore/gaps-001
 
 ## 남은 것 / 다음 세션
 
