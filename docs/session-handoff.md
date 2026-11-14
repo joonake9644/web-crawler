@@ -9,7 +9,7 @@
 
 다음 세션은 이 파일과 `.harness/state.json` 만 읽으면 된다. 이전 대화 이력은 근거가 아니다.
 
-- 입력 다이제스트: `3e6c4cc72d34642eb637df2d2f975b6319541cb60de7c1db84822a95e37f8849`
+- 입력 다이제스트: `dba1109f2f3b4a0e9bfa935aca13a25c08cb2199f82ec84fe6419d7aab531079`
 
 ## 상태 한 줄 요약
 
@@ -21,7 +21,7 @@
 
 ## 실측 검증 (write 시점에 돌린 결과다)
 
-측정 시점 HEAD: `31a4754` · 브랜치 `chore/rev14-gaps002-done`
+측정 시점 HEAD: `2aa7727` · 브랜치 `chore/rev15-safety-tools`
 
 > ⚠ **출처**: 아래 결과는 이 문서를 커밋하기 **전의 작업 트리**에서 돌았다.
 > `write` 는 커밋 전에 불리므로 위 해시는 이 문서를 담는 커밋의 **부모**다.
@@ -31,14 +31,16 @@
 
 | 항목 | 명령 | 결과 |
 |---|---|---|
-| baseline | `python -m pytest -q -k "not e2e"` | exit=0 ✅ — 728 passed, 14 deselected |
+| baseline | `python -m pytest -q -k "not e2e"` | exit=1 ❌ — 6 failed, 734 passed, 14 deselected |
 | 연속성 | `python scripts/continuity_check.py` | exit=0 ✅ — 연속성 검사 통과 — 포인터와 실제 파일이 일치한다 |
-| 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=0 ✅ — [OK] 도메인 목록 최신 — 15개 |
+| 도메인 목록 | `python scripts/sync_domain_list.py --check` | exit=1 ❌ — [FAIL] 생성 블록이 어긋났습니다 (CLAUDE.md, README.md, .gitignore). `python scrip |
 | Codex 미러 | `python scripts/sync_codex_mirror.py --check` | exit=0 ✅ — 출력 없음 |
 | 실행 계약 | `python scripts/sync_agent_contract.py --check` | exit=0 ✅ — 출력 없음 |
 
 ## 이번 세션에 한 일
 
+- 2aa7727 Merge pull request #27 from joonake9644/chore/rev14-gaps002-done
+- 5cc6081 chore(plan): REV-14 — GAPS-002 완료 표시
 - 31a4754 Merge pull request #26 from joonake9644/chore/gaps-002
 - 7301c62 test(bootstrap): 미설치 사유 시험도 pip 1회 확인 — 독립 리뷰 LOW 반영, 종료 분류·인계서
 - 7940778 fix(preflight,bootstrap): 빈 메시지 예외에도 진단이 죽지 않고, 재설치 전 「준비 안 됨」 사유를 보인다
@@ -49,8 +51,6 @@
 - a0a4b2a chore(plan): REV-12 — PREFLIGHT-001 완료 표시
 - 316f95d Merge pull request #23 from joonake9644/chore/preflight-001
 - e922a87 test(preflight): 판정 시험이 plain_get 호출까지 확인 — 독립 리뷰 LOW 반영, 종료 분류·인계서
-- f204e89 fix(preflight): 메시지 없는 예외도 HTTP 점검 WARN 으로 — IndexError 로 죽던 경로
-- 929f6b6 fix(preflight): HTTP 점검을 사다리 1단 plain_get 으로 — 지어낸 Referer·위장 헤더·deprecated 인스턴스 제거
 
 ## 남은 것 / 다음 세션
 

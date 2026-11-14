@@ -18,9 +18,9 @@
   },
   "plan_approval": {
     "id": "PY311-001-APPROVAL",
-    "revision": 14,
+    "revision": 15,
     "path": "docs/plan-approvals/PY311-001-APPROVAL.md",
-    "sha256": "52266ae588273748a194e1276c60e416b0be55de5af7900ddf9bba2187b9801f"
+    "sha256": "98027cc9ff1c7dda796916cb7376ef884830e50d71bb3ef2545b5e44191b525a"
   },
   "decision_baseline": [
     {
